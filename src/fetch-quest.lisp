@@ -24,19 +24,11 @@
 
 
 (defclass rectangle (static-sprite)
-  ((color :initarg :color :initform (make-color-rgba) :accessor color)
-   (path-to-sprite :initform (resource-path "rectangle.png")
-                   :allocation :class
+  ((path-to-sprite :initform (resource-path "rectangle.png")
                    :reader path-to-sprite))
   (:documentation "A basic rectangle with obb collision detection."))
 
-(defmethod initialize-instance :after ((rectangle rectangle) &rest args)
-  (declare (ignore args))
-  (setf (color rectangle) (color rectangle)))
-
-(defmethod (setf color) :after (value (rectangle rectangle))
-  (setf (recurse.vert::color rectangle) value))
-
+(defvar *player* nil)
 
 (defclass player (rectangle kinematic-object agent input-handler)
   ()
@@ -57,7 +49,7 @@
                  (:scancode-down :move-down)
                  (:scancode-j :move-down)))
 
-(let* ((move-delta 3000)
+(let* ((move-delta 300)
        (right-vec  (make-acceleration-vector-seconds :x move-delta))
        (left-vec   (make-acceleration-vector-seconds :x (- move-delta)))
        (up-vec     (make-acceleration-vector-seconds :y (- move-delta)))
@@ -95,56 +87,58 @@
   (update (slot-value scene 'scene-input-handler) delta-t-ms scene))
 
 (defun launch-fetch-quest ()
-  (let* ((demo-width 1024)
-         (demo-height 768)
+  (let* ((demo-width (first (getconfig 'game-resolution *config*)))
+         (demo-height (second (getconfig 'game-resolution *config*)))
          (world (make-instance 'myscene
                                :drag-y 0.99
-                               :width demo-width :height demo-height
+                               :width demo-width
+                               :height demo-height
                                ;; :background (make-instance 'static-sprite
                                ;;                            :path-to-sprite (resource-path "background.png")
                                ;;                            :width demo-width
                                ;;                            :height demo-height)
                                ;; :music (resource-path "mysong.wav")
                                :camera (make-instance 'camera
-                                                      :zoom 1
+                                                      :width (first (getconfig 'game-resolution *config*))
+                                                      :height (second (getconfig 'game-resolution *config*))
                                                       :min-x 0 :min-y 0
                                                       :max-x demo-width
                                                       :max-y demo-height
-                                                      :target-max-offset 20)))
-
+                                                      :target-max-offset 0)))
          (player (make-instance 'player
-                                :x 50
+                                :color *orange*
+                                :x (/ demo-width 2)
                                 :y (/ demo-height 2)
-                                :width 25
-                                :height 25))
+                                :width 5
+                                :height 5))
          (objects (list player
                         ;; put an invisible box around the boundary
-                        (make-instance 'aabb
+                        (make-instance 'obb
                                        :x 0
                                        :y 0
                                        :width 1
                                        :height demo-height)
-                        (make-instance 'aabb
+                        (make-instance 'obb
                                        :x 0
                                        :y 0
                                        :width demo-width
                                        :height 1)
-                        (make-instance 'aabb
+                        (make-instance 'obb
                                        :x demo-width
                                        :y 0
                                        :height demo-height
                                        :width 1)
-                        (make-instance 'aabb
+                        (make-instance 'obb
                                        :x 0
                                        :y demo-height
                                        :height 1
                                        :width demo-width))))
+    (setf *player* player)
     (setf (clear-color *engine-manager*)
           *green*)
     (loop for game-object in objects do
          (add-to-scene world game-object))
-    ;; Uncomment to have camera target player
-    ;; (setf (target (camera world)) player)
+    (setf (target (camera world)) player)
     (setf (active-input-device player) -1)
     world))
 
