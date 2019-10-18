@@ -1,25 +1,25 @@
 ;;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; Base: 10 -*-
 
-(defpackage #:mygame-asd
+(defpackage #:fetch-quest-asd
   (:use :cl :asdf))
 
-(in-package :mygame-asd)
+(in-package :fetch-quest-asd)
 
-(defsystem mygame
-  :name "mygame"
+(defsystem fetch-quest
+  :name "fetch-quest"
   :version "0.1"
-  :author "yourname"
+  :author "Ark"
   :components ((:file "packages")
-               (:file "src/mygame"))
+               (:file "src/fetch-quest"))
   :depends-on (#:vert))
 
-(defsystem mygame/test
-  :name "mygame/test"
-  :description "Tests for mygame"
+(defsystem fetch-quest/test
+  :name "fetch-quest/test"
+  :description "Tests for fetch-quest"
   :pathname "t/"
   :serial t
-  :depends-on (:prove :mygame)
+  :depends-on (:prove :fetch-quest)
   :components ((:file "packages")
-               (:file "mytest"))
+               (:file "test-fetch-quest"))
   :perform (test-op :after (op c)
                     (funcall (intern #.(string :run) :prove) c)))

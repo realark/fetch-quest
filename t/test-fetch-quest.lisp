@@ -1,5 +1,5 @@
-(in-package :mygame-test)
+(in-package :test-fetch-quest)
 
-(deftest mygame-test
-  (let ((mygame 'fun))
-    (is mygame 'fun)))
+(deftest fetch-quest-test
+  (let ((fetch-quest 'fun))
+    (is fetch-quest 'fun)))

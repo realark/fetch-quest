@@ -1,7 +1,7 @@
 (in-package :cl-user)
 
-(defpackage :mygame
+(defpackage :fetch-quest
   (:use :cl :recurse.vert))
 
-(defpackage :mygame-test
-  (:use :prove :cl :mygame))
+(defpackage :test-fetch-quest
+  (:use :prove :cl :fetch-quest))

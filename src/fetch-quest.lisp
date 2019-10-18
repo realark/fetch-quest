@@ -1,11 +1,24 @@
-(in-package :mygame)
+(in-package :fetch-quest)
+
+;;;; game config and menu
+
+(defvar *fetch-quest-config*
+  (make-config (*default-config*)
+               ('config-resource-dirs (list "./resources"))
+               ;; ('window-icon "window-icon.png") TODO
+               ('default-font "fonts/liberation_sans/LiberationSans-Regular.ttf")
+               ('resizable-window t)
+               ('enable-vsync t)
+               ('enable-compositor nil)
+               ('fullscreen-p t)
+               ('game-name "Fetch Quest")))
 
 (defun game-menu ()
   (setf (clear-color *engine-manager*) *black*)
   (let ((menu (create-menu (menu :active-input-device *all-input-id*)
-                (game-name *engine-manager*)
+                (getconfig 'game-name *config*)
                 ("Play" (run-action
-                         (change-scene *engine-manager* (launch-mygame))))
+                         (change-scene *engine-manager* (launch-fetch-quest))))
                 ("Quit" (run-action (quit))))))
     menu))
 
@@ -81,7 +94,7 @@
 (defmethod update :before ((scene myscene) delta-t-ms world-context)
   (update (slot-value scene 'scene-input-handler) delta-t-ms scene))
 
-(defun launch-mygame ()
+(defun launch-fetch-quest ()
   (let* ((demo-width 1024)
          (demo-height 768)
          (world (make-instance 'myscene
@@ -93,7 +106,6 @@
                                ;;                            :height demo-height)
                                ;; :music (resource-path "mysong.wav")
                                :camera (make-instance 'camera
-                                                      :pixels-per-unit 1
                                                       :zoom 1
                                                       :min-x 0 :min-y 0
                                                       :max-x demo-width
@@ -137,17 +149,19 @@
     world))
 
 #+nil
-(recurse.vert:main #'mygame::game-menu
-                   :game-name "mygame"
-                   :block T)
+(recurse.vert:main #'fetch-quest::game-menu
+                   :config *fetch-quest-config*
+                   :block nil
+                   :dev-mode (make-config ()
+                                          ('dev-mode-performance-hud t)
+                                          ('dev-mode-render-collision-hitboxes nil)))
 
-;; TODO figure out screen size control
 #+nil
-(recurse.vert:main #'mygame::game-menu
-                   :game-name "mygame"
-                   :screen-sizer (lambda (max-width-px max-height-px fullscreen-p)
-                                   T ; full-screen
-                                   16x9 ; aspect-ratio
-                                   (values 100 100) ; Force size
-                                   )
-                   :block T)
+(recurse.vert:main #'fetch-quest::game-menu
+                   :config  (make-config (*fetch-quest-config*)
+                                         ('enable-compositor t)
+                                         ('fullscreen-p nil))
+                   :block nil
+                   :dev-mode (make-config ()
+                                          ('dev-mode-performance-hud t)
+                                          ('dev-mode-render-collision-hitboxes nil)))
