@@ -15,14 +15,57 @@
         {
          "draworder":"topdown",
          "name":"ground0-objects",
-         "objects":[],
+         "objects":[
+                {
+                 "gid":1441,
+                 "height":32,
+                 "id":1,
+                 "name":"",
+                 "properties":
+                    {
+                     "simultainous-directions-p":"nil",
+                     "z":"*object-layer-0*"
+                    },
+                 "propertytypes":
+                    {
+                     "simultainous-directions-p":"string",
+                     "z":"string"
+                    },
+                 "rotation":0,
+                 "type":"player",
+                 "visible":true,
+                 "width":16,
+                 "x":32,
+                 "y":96
+                }, 
+                {
+                 "height":32,
+                 "id":2,
+                 "name":"",
+                 "properties":
+                    {
+                     "color":"*red*",
+                     "z":"*object-layer-0*"
+                    },
+                 "propertytypes":
+                    {
+                     "color":"string",
+                     "z":"string"
+                    },
+                 "rotation":0,
+                 "type":"rectangle",
+                 "visible":true,
+                 "width":32,
+                 "x":64,
+                 "y":96
+                }],
          "opacity":1,
          "type":"objectgroup",
          "visible":true,
          "x":0,
          "y":0
         }],
- "nextobjectid":1,
+ "nextobjectid":3,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.1.6",
@@ -31,6 +74,10 @@
         {
          "firstgid":1,
          "source":"overworld-tiles.json"
+        }, 
+        {
+         "firstgid":1441,
+         "source":"player.json"
         }],
  "tilewidth":16,
  "type":"map",

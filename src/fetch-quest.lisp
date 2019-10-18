@@ -18,7 +18,7 @@
   (let ((menu (create-menu (menu :active-input-device *all-input-id*)
                 (getconfig 'game-name *config*)
                 ("Play" (run-action
-                         (change-scene *engine-manager* (launch-fetch-quest))))
+                         (change-scene *engine-manager* (launch-overworld))))
                 ("Quit" (run-action (quit))))))
     menu))
 
@@ -28,6 +28,8 @@
   ((path-to-sprite :initform (resource-path "rectangle.png")
                    :reader path-to-sprite))
   (:documentation "A basic rectangle with obb collision detection."))
+
+;;;; collisions
 
 ;;;; player
 
@@ -197,6 +199,28 @@
                                                                                (tileset-tile-width tileset)
                                                                                (tileset-tile-height tileset)))))))))
 
+(defmethod on-object-read ((tiled-scene fetch-quest-scene) (object tiled-object))
+  (labels ((prop-val (key object)
+             (cdr (assoc key (tiled-object-props object))))
+           (prop-val-symbol (key object)
+             (alexandria:symbolicate (string-upcase (prop-val key object))))
+           (custom-prop-val (key object)
+             (cdr (assoc key (rest (assoc :properties (tiled-object-props object)))))))
+    (let ((*package* (find-package :fetch-quest)))
+      (add-to-scene tiled-scene
+                    (eval `(make-instance ',(prop-val-symbol :type object)
+                                          :object-id ,(prop-val :id object)
+                                          :x ,(prop-val :x object)
+                                          :y ,(prop-val :y object)
+                                          :z ,(read-from-string (null-fallback  (custom-prop-val :z object) "0"))
+                                          :width ,(prop-val :width object)
+                                          :height ,(prop-val :height object)
+                                          ,@(loop :with custom-props = (list)
+                                               :for custom-prop :in (prop-val :properties object) :do
+                                                 (push (read-from-string (cdr custom-prop)) custom-props)
+                                                 (push (car custom-prop) custom-props)
+                                               :finally (return custom-props))))))))
+
 (defmethod update :before ((scene fetch-quest-scene) delta-t-ms world-context)
   (with-slots (update-area camera) scene
     (let ((update-radius 200))
@@ -208,7 +232,7 @@
 
 ;;;; Game Launcher
 
-(defun launch-fetch-quest ()
+(defun launch-overworld ()
   (let* ((demo-width (first (getconfig 'game-resolution *config*)))
          (demo-height (second (getconfig 'game-resolution *config*)))
          (world (make-instance 'fetch-quest-scene
@@ -224,43 +248,16 @@
                                                       :min-x 0 :min-y 0
                                                       :max-x 1000 ; will be changed by tiled initializer
                                                       :max-y 1000 ; will be changed by tiled initializer
-                                                      :target-max-offset 0)))
-         (player (make-instance 'player
-                                :facing (list :south)
-                                :simultainous-directions-p nil
-                                :x (* 16 4)
-                                :y (* 16 4)
-                                :z *object-layer-0*
-                                :width 16
-                                :height 32))
-         (objects (list player
-                        ;; put an invisible box around the boundary
-                        (make-instance 'obb
-                                       :x -1
-                                       :y 0
-                                       :width 1
-                                       :height (height world))
-                        (make-instance 'obb
-                                       :x 0
-                                       :y -1
-                                       :width (width world)
-                                       :height 1)
-                        (make-instance 'obb
-                                       :x (width world)
-                                       :y 0
-                                       :height (height world)
-                                       :width 1)
-                        (make-instance 'obb
-                                       :x 0
-                                       :y (height world)
-                                       :height 1
-                                       :width (width world)))))
-    (setf *player* player)
+                                                      :target-max-offset 0))))
+    (block find-player
+      (do-spatial-partition (object (spatial-partition world))
+        (when (typep object 'player)
+          (setf *player* object)
+          (return-from find-player)))
+      (error "No player in map"))
     (setf (clear-color *engine-manager*) *black*)
-    (loop :for game-object :in objects :do
-         (add-to-scene world game-object))
-    (setf (target (camera world)) player)
-    (setf (active-input-device player) -1)
+    (setf (target (camera world)) *player*)
+    (setf (active-input-device *player*) -1)
     world))
 
 #+nil
