@@ -146,11 +146,13 @@
 
 (set-default-input-command-map
  my-scene-input-handler
- ("sdl-keyboard" (:scancode-q :quit)))
+ ("sdl-keyboard" (:scancode-q :quit)
+                 (:scancode-r :reload)))
 
 (set-default-command-action-map
  my-scene-input-handler
- (:quit              (on-deactivate (quit))))
+ (:quit              (on-deactivate (quit)))
+ (:reload            (on-deactivate (reload *scene*))))
 
 (defvar *world-layer-0* 0)
 (defvar *object-layer-0* 1)
@@ -160,6 +162,9 @@
     :documentation "Input handler for the main scene."
     :initform (make-instance 'my-scene-input-handler
                              :active-input-device *all-input-id*))
+   (reload-fn :initarg :reload-fn
+              :initform nil
+              :documentation "A (optional) zero-arg function which will reset the scene to its initial state (except for the player's position)")
    (tile-width-px :initform nil
                   :accessor tile-width-px)
    (tile-height-px :initform nil
@@ -230,18 +235,34 @@
             (active-area-max-y update-area) (+ (y camera) (height camera) update-radius))))
   (update (slot-value scene 'scene-input-handler) delta-t-ms scene))
 
+(defmethod reload ((scene fetch-quest-scene))
+  (with-slots (reload-fn) scene
+    (when (and *dev-mode* reload-fn)
+      (let ((player-x (x *player*))
+            (player-y (y *player*))
+            (player-z (z *player*))
+            (new-scene (funcall reload-fn)))
+        (change-scene *engine-manager* new-scene t t)
+        (schedule new-scene
+                  0
+                  (lambda ()
+                    (setf (x *player*) player-x
+                          (y *player*) player-y
+                          (z *player*) player-z)))))))
+
 ;;;; Game Launcher
 
 (defun launch-overworld ()
   (let* ((demo-width (first (getconfig 'game-resolution *config*)))
          (demo-height (second (getconfig 'game-resolution *config*)))
          (world (make-instance 'fetch-quest-scene
+                               :reload-fn #'launch-overworld
                                :tiled-map (resource-path "tiled/overworld.json")
                                ;; :background (make-instance 'static-sprite
                                ;;                            :path-to-sprite (resource-path "background.png")
                                ;;                            :width demo-width
                                ;;                            :height demo-height)
-                               ;; :music (resource-path "mysong.wav")
+                               :music (resource-path "overworld-theme.wav")
                                :camera (make-instance 'camera
                                                       :width (* demo-width 2)
                                                       :height (* demo-height 2)
