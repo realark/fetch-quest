@@ -6,3 +6,38 @@ Suddenly, your boss shows up at your door. There's a rush order that needs to be
 Traverse the overworld, combat enemies, collect packages, and make deliveries!
 * style
 Top-down 2d zelda-like adventure
+* objective
+- collect package
+- deliver package to the castle
+- profit!
+* features needed
+** tile collisions
+- don't let player pass specified boundaries
+** enemy
+- spooky log
+** collectable
+- package to collect
+- heart
+- coins/tip
+* work plan
+** bare-bones
+goals:
+- game doesn't crash
+- can walk around map
+- can win game by delivering package
+*** implement collisions
+*** implement packages
+*** implement HUD
+- player health
+- collect package on collision
+*** implement castle and NPC
+- to deliver package to
+** instructions and dialogue
+- intro to explain the game's objective
+- pause menu
+** Sword and enemies
+*** implement log enemy
+- take damage when hit by log
+*** sword attack
+- collect sword to attack enemies
+- enemies block progress until sword is collected
