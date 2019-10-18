@@ -51,16 +51,64 @@
                       :facing-west (make-animation :spritesheet (resource-path "character.png")
                                                     :frames (vector (apply #'make-sprite-source (frame-at 3 0)))
                                                     :time-between-frames-ms 500)
-                      ))))
+                      :walking-north (make-animation :spritesheet (resource-path "character.png")
+                                                     :frames (vector (apply #'make-sprite-source (frame-at 2 0))
+                                                                     (apply #'make-sprite-source (frame-at 2 1))
+                                                                     (apply #'make-sprite-source (frame-at 2 2))
+                                                                     (apply #'make-sprite-source (frame-at 2 3)))
+                                                    :time-between-frames-ms 250)
+                      :walking-south (make-animation :spritesheet (resource-path "character.png")
+                                                     :frames (vector (apply #'make-sprite-source (frame-at 0 0))
+                                                                     (apply #'make-sprite-source (frame-at 0 1))
+                                                                     (apply #'make-sprite-source (frame-at 0 2))
+                                                                     (apply #'make-sprite-source (frame-at 0 3)))
+                                                    :time-between-frames-ms 250)
+                      :walking-east (make-animation :spritesheet (resource-path "character.png")
+                                                     :frames (vector (apply #'make-sprite-source (frame-at 1 0))
+                                                                     (apply #'make-sprite-source (frame-at 1 1))
+                                                                     (apply #'make-sprite-source (frame-at 1 2))
+                                                                     (apply #'make-sprite-source (frame-at 1 3)))
+                                                    :time-between-frames-ms 250)
+                      :walking-west (make-animation :spritesheet (resource-path "character.png")
+                                                    :frames (vector (apply #'make-sprite-source (frame-at 3 0))
+                                                                    (apply #'make-sprite-source (frame-at 3 1))
+                                                                    (apply #'make-sprite-source (frame-at 3 2))
+                                                                    (apply #'make-sprite-source (frame-at 3 3)))
+                                                    :time-between-frames-ms 250))))
+   (previous-position :initform (vector2)))
   (:documentation "Player controlled game object"))
 
+(defmethod update-user ((player player) delta-t-ms scene)
+  #+nil
+  (with-slots (previous-position) player
+    (setf (x previous-position) (x player)
+          (y previous-position) (y player))
+    (values)))
+
+(defun %player-moving-p (player)
+  (with-slots (previous-position) player
+    (or (/= (x previous-position) (x player))
+         (/= (y previous-position) (y player)))))
+
 (defmethod get-new-animation ((player player))
-  (cond
-    (t (ecase (first (facing player))
-         (:north :facing-north)
-         (:south :facing-south)
-         (:east :facing-east)
-         (:west :facing-west)))))
+  (prog1
+      (ecase (first (facing player))
+        (:north (cond
+                  ((%player-moving-p player) :walking-north)
+                  (t :facing-north)))
+        (:south (cond
+                  ((%player-moving-p player) :walking-south)
+                  (t :facing-south)))
+        (:east (cond
+                  ((%player-moving-p player) :walking-east)
+                  (t :facing-east)))
+        (:west (cond
+                  ((%player-moving-p player) :walking-west)
+                  (t :facing-west))))
+    (with-slots (previous-position) player
+      (setf (x previous-position) (x player)
+            (y previous-position) (y player))
+      (values))))
 
 (set-default-input-command-map
  player
@@ -77,14 +125,14 @@
                  (:scancode-down :move-down)
                  (:scancode-j :move-down)))
 
-(let* ((move-delta 3))
+(let* ((move-delta 2))
   (set-default-command-action-map
    player
    (:move-right (while-active
                  (push-direction player :east)
                  (incf (x player) move-delta)))
    (:move-left (while-active
-                 (push-direction player :west)
+                (push-direction player :west)
                 (decf (x player) move-delta)))
    (:move-up (while-active
               (push-direction player :north)
