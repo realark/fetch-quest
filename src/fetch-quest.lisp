@@ -75,6 +75,7 @@
                                                                     (apply #'make-sprite-source (frame-at 3 2))
                                                                     (apply #'make-sprite-source (frame-at 3 3)))
                                                     :time-between-frames-ms 250))))
+   (velocity :initform 2)
    (previous-position :initform (vector2)))
   (:documentation "Player controlled game object"))
 
@@ -118,21 +119,20 @@
                  (:scancode-down :move-down)
                  (:scancode-j :move-down)))
 
-(let* ((move-delta 2))
-  (set-default-command-action-map
-   player
-   (:move-right (while-active
-                 (push-direction player :east)
-                 (incf (x player) move-delta)))
-   (:move-left (while-active
-                (push-direction player :west)
-                (decf (x player) move-delta)))
-   (:move-up (while-active
-              (push-direction player :north)
-              (decf (y player) move-delta)))
-   (:move-down (while-active
-                (push-direction player :south)
-                (incf (y player) move-delta)))))
+(set-default-command-action-map
+ player
+ (:move-right (while-active
+               (push-direction player :east)
+               (incf (x player) (slot-value player 'velocity))))
+ (:move-left (while-active
+              (push-direction player :west)
+              (decf (x player) (slot-value player 'velocity))))
+ (:move-up (while-active
+            (push-direction player :north)
+            (decf (y player) (slot-value player 'velocity))))
+ (:move-down (while-active
+              (push-direction player :south)
+              (incf (y player) (slot-value player 'velocity)))))
 
 ;;;; game scene
 
@@ -219,11 +219,11 @@
                                ;;                            :height demo-height)
                                ;; :music (resource-path "mysong.wav")
                                :camera (make-instance 'camera
-                                                      :width (first (getconfig 'game-resolution *config*))
-                                                      :height (second (getconfig 'game-resolution *config*))
+                                                      :width (* demo-width 2)
+                                                      :height (* demo-height 2)
                                                       :min-x 0 :min-y 0
-                                                      :max-x demo-width
-                                                      :max-y demo-height
+                                                      :max-x 1000 ; will be changed by tiled initializer
+                                                      :max-y 1000 ; will be changed by tiled initializer
                                                       :target-max-offset 0)))
          (player (make-instance 'player
                                 :facing (list :south)
