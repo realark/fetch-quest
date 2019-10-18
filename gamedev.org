@@ -1,0 +1,8 @@
+* plot
+You're a delivery boy. Thinking you were done work for the evening you and your roommate dropped a "heroic" dose and settled in for a quiet night at home.
+
+Suddenly, your boss shows up at your door. There's a rush order that needs to be delivered to the castle ASAP! Normally you'd turn down this request, but a call to adventure tells you to accept the job. Plus, you really could use the overtime pay.
+
+Traverse the overworld, combat enemies, collect packages, and make deliveries!
+* style
+Top-down 2d zelda-like adventure

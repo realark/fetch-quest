@@ -78,13 +78,6 @@
    (previous-position :initform (vector2)))
   (:documentation "Player controlled game object"))
 
-(defmethod update-user ((player player) delta-t-ms scene)
-  #+nil
-  (with-slots (previous-position) player
-    (setf (x previous-position) (x player)
-          (y previous-position) (y player))
-    (values)))
-
 (defun %player-moving-p (player)
   (with-slots (previous-position) player
     (or (/= (x previous-position) (x player))
@@ -143,6 +136,9 @@
 
 ;;;; game scene
 
+(defclass tile (animated-sprite static-object)
+  ())
+
 (defclass my-scene-input-handler (input-handler)
   ())
 
@@ -154,23 +150,69 @@
  my-scene-input-handler
  (:quit              (on-deactivate (quit))))
 
-(defclass myscene (game-scene physics-context-2d)
+(defvar *world-layer-0* 0)
+(defvar *object-layer-0* 1)
+
+(defclass fetch-quest-scene (tiled-scene)
   ((scene-input-handler
     :documentation "Input handler for the main scene."
     :initform (make-instance 'my-scene-input-handler
-                             :active-input-device *all-input-id*)))
+                             :active-input-device *all-input-id*))
+   (tile-width-px :initform nil
+                  :accessor tile-width-px)
+   (tile-height-px :initform nil
+                   :accessor tile-height-px))
   (:documentation "Default scene for my game"))
 
-(defmethod update :before ((scene myscene) delta-t-ms world-context)
+(defmethod initialize-instance :after ((scene fetch-quest-scene) &rest args)
+  (declare (ignore args))
+  (with-slots (update-area) scene
+    (setf update-area
+          (make-active-area :min-x 0.0 :max-x 0.0 :min-y 0.0 :max-y 0.0))))
+
+(defmethod on-map-read ((scene fetch-quest-scene) tiled-map-path map-num-cols map-num-rows map-tile-width map-tile-height)
+  (setf (tile-width-px scene) map-tile-width
+        (tile-height-px scene) map-tile-height
+        (width scene) (* (tile-width-px scene) map-num-cols)
+        (height scene) (* (tile-height-px scene) map-num-rows))
+  (when (recurse.vert::max-x (camera scene))
+    (setf (recurse.vert::max-x (camera scene)) (width scene)))
+  (when (recurse.vert::max-y (camera scene)) (height scene)
+        (setf (recurse.vert::max-y (camera scene)) (height scene))))
+
+(defmethod on-tile-read ((tiled-scene fetch-quest-scene) layer-json tileset tile-map-col tile-map-row tile-source-col tile-source-row)
+  (labels ((prop-val (key object)
+             (cdr (assoc key (rest (assoc :properties object))))))
+    (add-to-scene
+     tiled-scene
+     (make-instance 'tile
+                    :width (tile-width-px tiled-scene) :height (tile-height-px tiled-scene)
+                    :x (* (tile-width-px tiled-scene) tile-map-col)
+                    :y (* (tile-height-px tiled-scene) tile-map-row)
+                    :z (read-from-string (null-fallback (prop-val :z layer-json) "0"))
+                    :animations (list :static (make-animation :spritesheet (tileset-image-source tileset)
+                                                              :frames (vector (make-sprite-source
+                                                                               (* (tileset-tile-width tileset) tile-source-col)
+                                                                               (* (tileset-tile-height tileset) tile-source-row)
+                                                                               (tileset-tile-width tileset)
+                                                                               (tileset-tile-height tileset)))))))))
+
+(defmethod update :before ((scene fetch-quest-scene) delta-t-ms world-context)
+  (with-slots (update-area camera) scene
+    (let ((update-radius 200))
+      (setf (active-area-min-x update-area) (- (x camera) update-radius)
+            (active-area-max-x update-area) (+ (x camera) (width camera) update-radius)
+            (active-area-min-y update-area) (- (y camera) update-radius)
+            (active-area-max-y update-area) (+ (y camera) (height camera) update-radius))))
   (update (slot-value scene 'scene-input-handler) delta-t-ms scene))
+
+;;;; Game Launcher
 
 (defun launch-fetch-quest ()
   (let* ((demo-width (first (getconfig 'game-resolution *config*)))
          (demo-height (second (getconfig 'game-resolution *config*)))
-         (world (make-instance 'myscene
-                               :drag-y 0.99
-                               :width demo-width
-                               :height demo-height
+         (world (make-instance 'fetch-quest-scene
+                               :tiled-map (resource-path "tiled/overworld.json")
                                ;; :background (make-instance 'static-sprite
                                ;;                            :path-to-sprite (resource-path "background.png")
                                ;;                            :width demo-width
@@ -186,8 +228,9 @@
          (player (make-instance 'player
                                 :facing (list :south)
                                 :simultainous-directions-p nil
-                                :x (/ demo-width 2)
-                                :y (/ demo-height 2)
+                                :x (* 16 4)
+                                :y (* 16 4)
+                                :z *object-layer-0*
                                 :width 16
                                 :height 32))
          (objects (list player
@@ -196,26 +239,25 @@
                                        :x -1
                                        :y 0
                                        :width 1
-                                       :height demo-height)
+                                       :height (height world))
                         (make-instance 'obb
                                        :x 0
                                        :y -1
-                                       :width demo-width
+                                       :width (width world)
                                        :height 1)
                         (make-instance 'obb
-                                       :x demo-width
+                                       :x (width world)
                                        :y 0
-                                       :height demo-height
+                                       :height (height world)
                                        :width 1)
                         (make-instance 'obb
                                        :x 0
-                                       :y demo-height
+                                       :y (height world)
                                        :height 1
-                                       :width demo-width))))
+                                       :width (width world)))))
     (setf *player* player)
-    (setf (clear-color *engine-manager*)
-          *green*)
-    (loop for game-object in objects do
+    (setf (clear-color *engine-manager*) *black*)
+    (loop :for game-object :in objects :do
          (add-to-scene world game-object))
     (setf (target (camera world)) player)
     (setf (active-input-device player) -1)
