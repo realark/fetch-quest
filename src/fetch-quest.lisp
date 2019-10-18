@@ -22,17 +22,45 @@
                 ("Quit" (run-action (quit))))))
     menu))
 
+;;;; basic objects
 
 (defclass rectangle (static-sprite)
   ((path-to-sprite :initform (resource-path "rectangle.png")
                    :reader path-to-sprite))
   (:documentation "A basic rectangle with obb collision detection."))
 
+;;;; player
+
 (defvar *player* nil)
 
-(defclass player (rectangle kinematic-object agent input-handler)
-  ()
-  (:documentation "Player-controlled rectangle."))
+(defclass player (animated-sprite direction-tracker agent input-handler)
+  ((recurse.vert:animations
+    :initform (labels ((frame-at (row col)
+                         (let ((frame-width 16)
+                               (frame-height 32))
+                           (list (* col frame-width) (* row frame-height) frame-width frame-height))))
+                (list :facing-north (make-animation :spritesheet (resource-path "character.png")
+                                                    :frames (vector (apply #'make-sprite-source (frame-at 2 0)))
+                                                    :time-between-frames-ms 500)
+                      :facing-south (make-animation :spritesheet (resource-path "character.png")
+                                                    :frames (vector (apply #'make-sprite-source (frame-at 0 0)))
+                                                    :time-between-frames-ms 500)
+                      :facing-east (make-animation :spritesheet (resource-path "character.png")
+                                                    :frames (vector (apply #'make-sprite-source (frame-at 1 0)))
+                                                    :time-between-frames-ms 500)
+                      :facing-west (make-animation :spritesheet (resource-path "character.png")
+                                                    :frames (vector (apply #'make-sprite-source (frame-at 3 0)))
+                                                    :time-between-frames-ms 500)
+                      ))))
+  (:documentation "Player controlled game object"))
+
+(defmethod get-new-animation ((player player))
+  (cond
+    (t (ecase (first (facing player))
+         (:north :facing-north)
+         (:south :facing-south)
+         (:east :facing-east)
+         (:west :facing-west)))))
 
 (set-default-input-command-map
  player
@@ -49,21 +77,23 @@
                  (:scancode-down :move-down)
                  (:scancode-j :move-down)))
 
-(let* ((move-delta 300)
-       (right-vec  (make-acceleration-vector-seconds :x move-delta))
-       (left-vec   (make-acceleration-vector-seconds :x (- move-delta)))
-       (up-vec     (make-acceleration-vector-seconds :y (- move-delta)))
-       (down-vec   (make-acceleration-vector-seconds :y move-delta)))
+(let* ((move-delta 3))
   (set-default-command-action-map
    player
    (:move-right (while-active
-                 (apply-vector player right-vec)))
+                 (push-direction player :east)
+                 (incf (x player) move-delta)))
    (:move-left (while-active
-                (apply-vector player left-vec)))
+                 (push-direction player :west)
+                (decf (x player) move-delta)))
    (:move-up (while-active
-              (apply-vector player up-vec)))
+              (push-direction player :north)
+              (decf (y player) move-delta)))
    (:move-down (while-active
-                (apply-vector player down-vec)))))
+                (push-direction player :south)
+                (incf (y player) move-delta)))))
+
+;;;; game scene
 
 (defclass my-scene-input-handler (input-handler)
   ())
@@ -106,21 +136,22 @@
                                                       :max-y demo-height
                                                       :target-max-offset 0)))
          (player (make-instance 'player
-                                :color *orange*
+                                :facing (list :south)
+                                :simultainous-directions-p nil
                                 :x (/ demo-width 2)
                                 :y (/ demo-height 2)
-                                :width 5
-                                :height 5))
+                                :width 16
+                                :height 32))
          (objects (list player
                         ;; put an invisible box around the boundary
                         (make-instance 'obb
-                                       :x 0
+                                       :x -1
                                        :y 0
                                        :width 1
                                        :height demo-height)
                         (make-instance 'obb
                                        :x 0
-                                       :y 0
+                                       :y -1
                                        :width demo-width
                                        :height 1)
                         (make-instance 'obb
