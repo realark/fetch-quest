@@ -58,6 +58,25 @@
                  "width":32,
                  "x":64,
                  "y":96
+                }, 
+                {
+                 "height":16,
+                 "id":3,
+                 "name":"",
+                 "properties":
+                    {
+                     "z":"*object-layer-0*"
+                    },
+                 "propertytypes":
+                    {
+                     "z":"string"
+                    },
+                 "rotation":0,
+                 "type":"gift",
+                 "visible":true,
+                 "width":16,
+                 "x":32,
+                 "y":176
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -65,7 +84,7 @@
          "x":0,
          "y":0
         }],
- "nextobjectid":3,
+ "nextobjectid":4,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.1.6",

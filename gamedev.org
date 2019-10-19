@@ -25,7 +25,7 @@ goals:
 - game doesn't crash
 - can walk around map
 - can win game by delivering package
-*** implement collisions
+*** DONE implement collisions
 *** implement packages
 *** implement HUD
 - player health

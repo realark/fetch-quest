@@ -22,13 +22,6 @@
                 ("Quit" (run-action (quit))))))
     menu))
 
-;;;; basic objects
-
-(defclass rectangle (static-sprite)
-  ((path-to-sprite :initform (resource-path "rectangle.png")
-                   :reader path-to-sprite))
-  (:documentation "A basic rectangle with obb collision detection."))
-
 ;;;; collisions
 
 (defclass simple-motion (obb)
@@ -47,6 +40,17 @@
       (setf (x velocity) 0.0
             (y velocity) 0.0)))
   (values))
+
+;;;; objects
+
+(defclass rectangle (static-sprite)
+  ((path-to-sprite :initform (resource-path "rectangle.png")
+                   :reader path-to-sprite))
+  (:documentation "A basic rectangle with obb collision detection."))
+
+(defclass gift (static-sprite)
+  ((path-to-sprite :initform (resource-path "gift.png")
+                   :reader path-to-sprite)))
 
 ;;;; player
 
@@ -95,6 +99,7 @@
                                                                     (apply #'make-sprite-source (frame-at 3 3)))
                                                     :time-between-frames-ms 250))))
    (speed :initform 2)
+   (collected-gifts :initform (list))
    (previous-position :initform (vector2)))
   (:documentation "Player controlled game object"))
 
@@ -152,6 +157,12 @@
  (:move-down (while-active
               (push-direction player :south)
               (setf (y (slot-value player 'velocity)) 2.0))))
+
+(defmethod collision :after ((player player) (gift gift))
+  (with-slots (collected-gifts) player
+    (unless (find gift collected-gifts)
+      (push gift collected-gifts)))
+  (remove-from-scene *scene* gift))
 
 ;;;; game scene
 
@@ -275,10 +286,6 @@
          (world (make-instance 'fetch-quest-scene
                                :reload-fn #'launch-overworld
                                :tiled-map (resource-path "tiled/overworld.json")
-                               ;; :background (make-instance 'static-sprite
-                               ;;                            :path-to-sprite (resource-path "background.png")
-                               ;;                            :width demo-width
-                               ;;                            :height demo-height)
                                :music (resource-path "overworld-theme.wav")
                                :camera (make-instance 'camera
                                                       :width (* demo-width 2)
