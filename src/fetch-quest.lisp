@@ -245,6 +245,19 @@
       (push gift collected-gifts)))
   (remove-from-scene *scene* gift))
 
+(defmethod collision :after ((player player) (npc npc))
+  (labels ((face-towards (object object-to-face)
+             "Change OBJECT's direction to face OBJECT-TO-FACE"
+             (declare (direction-tracker object object-to-face))
+             (let ((object-to-face-direction (first (facing object-to-face))))
+               (push-direction object
+                               (ecase object-to-face-direction
+                                 (:north :south)
+                                 (:south :north)
+                                 (:east :west)
+                                 (:west :east))))))
+    (face-towards npc player)))
+
 ;;;; player HUD
 
 (defmethod add-to-scene :after (scene (player player))
