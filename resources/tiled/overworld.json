@@ -136,7 +136,7 @@
                      "z":"string"
                     },
                  "rotation":0,
-                 "type":"npc",
+                 "type":"gift-collector-npc",
                  "visible":true,
                  "width":16,
                  "x":2172,

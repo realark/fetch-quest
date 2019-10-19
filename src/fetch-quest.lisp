@@ -141,6 +141,10 @@
                                                                     (apply #'make-sprite-source (frame-at 3 3)))
                                                     :time-between-frames-ms 250))))))
 
+(defclass gift-collector-npc (npc)
+  ((num-gifts-to-win-game :initform 3
+                          :documentation "When player delivers this number of packages to the NPC the game is won.")
+   (num-gifts-received :initform 0)))
 
 ;;;; player
 
@@ -257,6 +261,15 @@
                                  (:east :west)
                                  (:west :east))))))
     (face-towards npc player)))
+
+(defmethod collision :after ((player player) (npc gift-collector-npc))
+  (with-slots (collected-gifts) player
+    (with-slots (num-gifts-to-win-game num-gifts-received) npc
+      (loop :while (> (length collected-gifts) 0) :do
+           (pop collected-gifts)
+           (incf num-gifts-received))
+      (when (>= num-gifts-received num-gifts-to-win-game)
+        (change-scene *engine-manager* (won-game-menu) )))))
 
 ;;;; player HUD
 
@@ -446,6 +459,16 @@
                     (setf (x *player*) player-x
                           (y *player*) player-y
                           (z *player*) player-z)))))))
+
+;;;; Won game menu
+(defun won-game-menu ()
+  (setf (clear-color *engine-manager*) *black*)
+  (let ((menu (create-menu (menu :active-input-device *all-input-id*)
+                "YOU WIN!!!"
+                ("Play Again" (run-action
+                               (change-scene *engine-manager* (launch-overworld))))
+                ("Quit" (run-action (quit))))))
+    menu))
 
 ;;;; Game Launcher
 

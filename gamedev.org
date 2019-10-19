@@ -32,9 +32,10 @@ CLOSED: [2019-10-19 Sat 12:08]
 - player health
 - collected packages
 - collect package on collision
-*** DOING implement castle and NPC
+*** DONE implement castle and NPC
+CLOSED: [2019-10-19 Sat 16:12]
 - to deliver package to
-*** tile-based collisions
+*** DOING tile-based collisions
 - Don't let player walk over certain tiles
 *** win screen
 *** add sound effects
@@ -48,6 +49,8 @@ CLOSED: [2019-10-19 Sat 12:08]
 - coin count on HUD
 ** Ending screen
 - Some kind of score / good job
+** window icon
+** pause menu
 ** Better font colors
 ** credits
 ** Sword and enemies
