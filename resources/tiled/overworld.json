@@ -39,29 +39,9 @@
                  "y":96
                 }, 
                 {
-                 "height":32,
-                 "id":2,
-                 "name":"",
-                 "properties":
-                    {
-                     "color":"*red*",
-                     "z":"*object-layer-0*"
-                    },
-                 "propertytypes":
-                    {
-                     "color":"string",
-                     "z":"string"
-                    },
-                 "rotation":0,
-                 "type":"rectangle",
-                 "visible":true,
-                 "width":32,
-                 "x":64,
-                 "y":96
-                }, 
-                {
+                 "gid":1577,
                  "height":16,
-                 "id":3,
+                 "id":4,
                  "name":"",
                  "properties":
                     {
@@ -76,7 +56,47 @@
                  "visible":true,
                  "width":16,
                  "x":32,
-                 "y":176
+                 "y":160
+                }, 
+                {
+                 "gid":1577,
+                 "height":16,
+                 "id":5,
+                 "name":"",
+                 "properties":
+                    {
+                     "z":"*object-layer-0*"
+                    },
+                 "propertytypes":
+                    {
+                     "z":"string"
+                    },
+                 "rotation":0,
+                 "type":"gift",
+                 "visible":true,
+                 "width":16,
+                 "x":28,
+                 "y":236
+                }, 
+                {
+                 "gid":1577,
+                 "height":16,
+                 "id":6,
+                 "name":"",
+                 "properties":
+                    {
+                     "z":"*object-layer-0*"
+                    },
+                 "propertytypes":
+                    {
+                     "z":"string"
+                    },
+                 "rotation":0,
+                 "type":"gift",
+                 "visible":true,
+                 "width":16,
+                 "x":72,
+                 "y":196
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -84,7 +104,7 @@
          "x":0,
          "y":0
         }],
- "nextobjectid":4,
+ "nextobjectid":7,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.1.6",
@@ -97,6 +117,10 @@
         {
          "firstgid":1441,
          "source":"player.json"
+        }, 
+        {
+         "firstgid":1577,
+         "source":"gift.json"
         }],
  "tilewidth":16,
  "type":"map",

@@ -100,8 +100,21 @@
                                                     :time-between-frames-ms 250))))
    (speed :initform 2)
    (collected-gifts :initform (list))
+   (health :initarg :health :initform nil)
+   (max-health :initform 3)
+   (hud :initform nil)
    (previous-position :initform (vector2)))
   (:documentation "Player controlled game object"))
+
+(defmethod initialize-instance :after ((player player) &rest args)
+  (declare (ignore args))
+  (with-slots (hud health max-health) player
+    (unless health
+      (setf health max-health))
+    (setf hud (make-instance 'player-hud
+                             :player player
+                             :width (first (getconfig 'game-resolution *config*))
+                             :height (second (getconfig 'game-resolution *config*))))))
 
 (defun %player-moving-p (player)
   (with-slots (previous-position) player
@@ -163,6 +176,60 @@
     (unless (find gift collected-gifts)
       (push gift collected-gifts)))
   (remove-from-scene *scene* gift))
+
+;;;; player HUD
+
+(defmethod add-to-scene :after (scene (player player))
+  (add-to-scene scene (slot-value player 'hud)))
+
+(defmethod remove-from-scene :after (scene (player player))
+  (remove-from-scene scene (slot-value player 'hud)))
+
+(defclass player-hud (overlay)
+  ((player :initform (error ":player requred") :initarg :player)
+   (hearts :initform (make-array 0
+                                 :element-type 'static-sprite
+                                 :adjustable t
+                                 :fill-pointer 0))
+   (packages :initform (make-array 0
+                                   :element-type 'static-sprite
+                                   :adjustable t
+                                   :fill-pointer 0))))
+
+(defmethod update-user :before ((hud player-hud) delta-t-ms scene)
+  (labels ((create-health (hud row)
+             (let* ((hud-icon-size 16)
+                    (w 16) (h 16)
+                    (full-heart-source (make-sprite-source (* w 4) (* h 0) w h))
+                    (empty-heart-source (make-sprite-source (* w 8) (* h 0) w h)))
+               (with-slots (player hearts) hud
+                 (with-slots ((current-health health) max-health) player
+                   (cond ((> (length hearts) max-health)
+                          (loop :for i :from max-health :below (length hearts) :do
+                               (release-resources (elt hearts i))
+                               (setf (parent (elt hearts i)) nil))
+                          (setf (fill-pointer hearts) max-health))
+                         ((< (length hearts) max-health)
+                          (loop :for i :from (length hearts) :below max-health :do
+                               (let ((heart (make-instance 'static-sprite
+                                                           :path-to-sprite (resource-path "objects.png")
+                                                           :sprite-source full-heart-source
+                                                           :parent hud
+                                                           :x (* i hud-icon-size)
+                                                           :y (* row hud-icon-size)
+                                                           :width hud-icon-size
+                                                           :height hud-icon-size)))
+                                 (vector-push-extend heart hearts))
+                               (load-resources (elt hearts i) (rendering-context *engine-manager*))))
+                         (t (loop :for i :from 0
+                               :for heart :across hearts :do
+                                 (when (> i 0)
+                                   (setf (sprite-source heart) empty-heart-source)))))))))
+           (create-gifts (hud row)
+             'TODO))
+    (let ((row -1))
+      (create-health hud (incf row))
+      (create-gifts hud (incf row)))))
 
 ;;;; game scene
 

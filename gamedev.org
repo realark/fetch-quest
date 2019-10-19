@@ -20,21 +20,32 @@ Top-down 2d zelda-like adventure
 - heart
 - coins/tip
 * work plan
-** bare-bones
+** DOING bare-bones
 goals:
 - game doesn't crash
 - can walk around map
 - can win game by delivering package
 *** DONE implement collisions
-*** implement packages
-*** implement HUD
+*** DONE implement packages
+*** DOING implement HUD
 - player health
+- collected packages
 - collect package on collision
 *** implement castle and NPC
 - to deliver package to
+*** add sound effects
+- package collect
 ** instructions and dialogue
 - intro to explain the game's objective
 - pause menu
+** coins
+- collectable coin
+- sfx on coin collect
+- coin count on HUD
+** Ending screen
+- Some kind of score / good job
+** Better font colors
+** credits
 ** Sword and enemies
 *** implement log enemy
 - take damage when hit by log
