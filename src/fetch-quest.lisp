@@ -191,17 +191,17 @@
                                  :element-type 'static-sprite
                                  :adjustable t
                                  :fill-pointer 0))
-   (packages :initform (make-array 0
-                                   :element-type 'static-sprite
-                                   :adjustable t
-                                   :fill-pointer 0))))
+   (gifts :initform (make-array 0
+                                :element-type 'static-sprite
+                                :adjustable t
+                                :fill-pointer 0))))
 
 (defmethod update-user :before ((hud player-hud) delta-t-ms scene)
-  (labels ((create-health (hud row)
-             (let* ((hud-icon-size 16)
-                    (w 16) (h 16)
-                    (full-heart-source (make-sprite-source (* w 4) (* h 0) w h))
-                    (empty-heart-source (make-sprite-source (* w 8) (* h 0) w h)))
+  (let* ((hud-icon-size 16)
+         (w 16) (h 16)
+         (full-heart-source (make-sprite-source (* w 4) (* h 0) w h))
+         (empty-heart-source (make-sprite-source (* w 8) (* h 0) w h)))
+    (labels ((create-health (hud row)
                (with-slots (player hearts) hud
                  (with-slots ((current-health health) max-health) player
                    (cond ((> (length hearts) max-health)
@@ -223,13 +223,31 @@
                                (load-resources (elt hearts i) (rendering-context *engine-manager*))))
                          (t (loop :for i :from 0
                                :for heart :across hearts :do
-                                 (when (> i 0)
-                                   (setf (sprite-source heart) empty-heart-source)))))))))
-           (create-gifts (hud row)
-             'TODO))
-    (let ((row -1))
-      (create-health hud (incf row))
-      (create-gifts hud (incf row)))))
+                                 (if (>= i current-health)
+                                     (setf (sprite-source heart) empty-heart-source)
+                                     (setf (sprite-source heart) full-heart-source))))))))
+             (create-gifts (hud row)
+               (with-slots (player (hud-gifts gifts)) hud
+                 (with-slots ((player-gifts collected-gifts)) player
+                   (cond ((> (length hud-gifts) (length player-gifts))
+                          (loop :for i :from (length player-gifts) :below (length hud-gifts) :do
+                               (release-resources (elt hud-gifts i))
+                               (setf (parent (elt hud-gifts i)) nil))
+                          (setf (fill-pointer hud-gifts) (length player-gifts)))
+                         ((< (length hud-gifts) (length player-gifts))
+                          (loop :for i :from (length hud-gifts) :below (length player-gifts) :do
+                               (let ((gift (make-instance 'static-sprite
+                                                           :path-to-sprite (resource-path "gift.png")
+                                                           :parent hud
+                                                           :x (* i hud-icon-size)
+                                                           :y (* row hud-icon-size)
+                                                           :width hud-icon-size
+                                                           :height hud-icon-size)))
+                                 (vector-push-extend gift hud-gifts))
+                               (load-resources (elt hud-gifts i) (rendering-context *engine-manager*)))))))))
+      (let ((row -1))
+        (create-health hud (incf row))
+        (create-gifts hud (incf row))))))
 
 ;;;; game scene
 
