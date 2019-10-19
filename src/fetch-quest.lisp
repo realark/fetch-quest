@@ -31,11 +31,28 @@
 
 ;;;; collisions
 
+(defclass simple-motion (obb)
+  ((velocity :initform (vector2))))
+
+(defmethod update-motion ((moving-object simple-motion) timestep scene)
+  (with-slots (velocity) moving-object
+    (unless (= 0.0 (x velocity) (y velocity))
+      (with-collision-check (moving-object scene)
+        (:position-update
+         (incf (x moving-object) (x velocity))
+         (incf (y moving-object) (y velocity)))
+        (:on-collision other-object
+                       (decf (x moving-object) (x velocity))
+                       (decf (y moving-object) (y velocity))))
+      (setf (x velocity) 0.0
+            (y velocity) 0.0)))
+  (values))
+
 ;;;; player
 
 (defvar *player* nil)
 
-(defclass player (animated-sprite direction-tracker agent input-handler)
+(defclass player (simple-motion animated-sprite direction-tracker agent input-handler)
   ((recurse.vert:animations
     :initform (labels ((frame-at (row col)
                          (let ((frame-width 16)
@@ -77,7 +94,7 @@
                                                                     (apply #'make-sprite-source (frame-at 3 2))
                                                                     (apply #'make-sprite-source (frame-at 3 3)))
                                                     :time-between-frames-ms 250))))
-   (velocity :initform 2)
+   (speed :initform 2)
    (previous-position :initform (vector2)))
   (:documentation "Player controlled game object"))
 
@@ -125,16 +142,16 @@
  player
  (:move-right (while-active
                (push-direction player :east)
-               (incf (x player) (slot-value player 'velocity))))
+               (setf (x (slot-value player 'velocity)) 2.0)))
  (:move-left (while-active
               (push-direction player :west)
-              (decf (x player) (slot-value player 'velocity))))
+              (setf (x (slot-value player 'velocity)) -2.0)))
  (:move-up (while-active
             (push-direction player :north)
-            (decf (y player) (slot-value player 'velocity))))
+            (setf (y (slot-value player 'velocity)) -2.0)))
  (:move-down (while-active
               (push-direction player :south)
-              (incf (y player) (slot-value player 'velocity)))))
+              (setf (y (slot-value player 'velocity)) 2.0))))
 
 ;;;; game scene
 
