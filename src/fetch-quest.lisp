@@ -52,6 +52,96 @@
   ((path-to-sprite :initform (resource-path "gift.png")
                    :reader path-to-sprite)))
 
+;;;; faceable entity
+(defclass faceable (animated-sprite direction-tracker obb)
+  ((recurse.vert::simultanious-directions-p :initform nil)
+   (previous-position :initform (vector2)))
+  (:documentation "An entity which can face or run north,south,east,west."))
+
+(defmethod initialize-instance :after ((faceable faceable) &rest args)
+  (declare (ignore args))
+  (with-slots (animations) faceable
+    (loop :for animation-name :in '(:facing-north
+                                    :walking-north
+                                    :facing-south
+                                    :walking-south
+                                    :facing-east
+                                    :walking-east
+                                    :facing-west
+                                    :walking-west)
+       :do
+         (unless (find animation-name animations)
+           (error "~A is faceable and must define an animation for ~A" faceable animation-name)))))
+
+(defmethod get-new-animation ((faceable faceable))
+  (labels ((update-movement-tracker (faceable)
+             (with-slots (previous-position) faceable
+               (prog1 (or (/= (x previous-position) (x faceable))
+                          (/= (y previous-position) (y faceable)))
+                 ;; rest previous position
+                 (setf (x previous-position) (x faceable)
+                       (y previous-position) (y faceable))))))
+    (let ((moving-p (update-movement-tracker faceable)))
+      (ecase (first (facing faceable))
+        (:north (cond
+                  (moving-p :walking-north)
+                  (t :facing-north)))
+        (:south (cond
+                  (moving-p :walking-south)
+                  (t :facing-south)))
+        (:east (cond
+                 (moving-p :walking-east)
+                 (t :facing-east)))
+        (:west (cond
+                 (moving-p :walking-west)
+                 (t :facing-west)))))))
+
+;;;; npc
+
+(defclass npc (faceable)
+  ((recurse.vert:animations
+    :initform (labels ((frame-at (row col)
+                         (let ((frame-width 16)
+                               (frame-height 32))
+                           (list (* col frame-width) (* row frame-height) frame-width frame-height))))
+                (list :facing-south (make-animation :spritesheet (resource-path "NPC_test.png")
+                                                    :frames (vector (apply #'make-sprite-source (frame-at 0 0)))
+                                                    :time-between-frames-ms 500)
+                      :facing-north (make-animation :spritesheet (resource-path "NPC_test.png")
+                                                    :frames (vector (apply #'make-sprite-source (frame-at 2 0)))
+                                                    :time-between-frames-ms 500)
+                      :facing-east (make-animation :spritesheet (resource-path "NPC_test.png")
+                                                    :frames (vector (apply #'make-sprite-source (frame-at 1 0)))
+                                                    :time-between-frames-ms 500)
+                      :facing-west (make-animation :spritesheet (resource-path "NPC_test.png")
+                                                    :frames (vector (apply #'make-sprite-source (frame-at 3 0)))
+                                                    :time-between-frames-ms 500)
+                      :walking-north (make-animation :spritesheet (resource-path "character.png")
+                                                     :frames (vector (apply #'make-sprite-source (frame-at 2 0))
+                                                                     (apply #'make-sprite-source (frame-at 2 1))
+                                                                     (apply #'make-sprite-source (frame-at 2 2))
+                                                                     (apply #'make-sprite-source (frame-at 2 3)))
+                                                    :time-between-frames-ms 250)
+                      :walking-south (make-animation :spritesheet (resource-path "character.png")
+                                                     :frames (vector (apply #'make-sprite-source (frame-at 0 0))
+                                                                     (apply #'make-sprite-source (frame-at 0 1))
+                                                                     (apply #'make-sprite-source (frame-at 0 2))
+                                                                     (apply #'make-sprite-source (frame-at 0 3)))
+                                                    :time-between-frames-ms 250)
+                      :walking-east (make-animation :spritesheet (resource-path "character.png")
+                                                     :frames (vector (apply #'make-sprite-source (frame-at 1 0))
+                                                                     (apply #'make-sprite-source (frame-at 1 1))
+                                                                     (apply #'make-sprite-source (frame-at 1 2))
+                                                                     (apply #'make-sprite-source (frame-at 1 3)))
+                                                    :time-between-frames-ms 250)
+                      :walking-west (make-animation :spritesheet (resource-path "character.png")
+                                                    :frames (vector (apply #'make-sprite-source (frame-at 3 0))
+                                                                    (apply #'make-sprite-source (frame-at 3 1))
+                                                                    (apply #'make-sprite-source (frame-at 3 2))
+                                                                    (apply #'make-sprite-source (frame-at 3 3)))
+                                                    :time-between-frames-ms 250))))))
+
+
 ;;;; player
 
 (defvar *player* nil)
@@ -293,12 +383,15 @@
 (defmethod on-map-read ((scene fetch-quest-scene) tiled-map-path map-num-cols map-num-rows map-tile-width map-tile-height)
   (setf (tile-width-px scene) map-tile-width
         (tile-height-px scene) map-tile-height
-        (width scene) (* (tile-width-px scene) map-num-cols)
-        (height scene) (* (tile-height-px scene) map-num-rows))
+        ;; pad out the size of the tiles a little bit
+        (width scene) (* (tile-width-px scene) (+ map-num-cols 4))
+        (height scene) (* (tile-height-px scene) (+ map-num-rows 4)))
   (when (recurse.vert::max-x (camera scene))
-    (setf (recurse.vert::max-x (camera scene)) (width scene)))
+    (setf (recurse.vert::max-x (camera scene))
+          (* (tile-width-px scene) (+ map-num-cols 0))))
   (when (recurse.vert::max-y (camera scene)) (height scene)
-        (setf (recurse.vert::max-y (camera scene)) (height scene))))
+        (setf (recurse.vert::max-y (camera scene))
+              (* (tile-height-px scene) (+ map-num-rows 0)))))
 
 (defmethod on-tile-read ((tiled-scene fetch-quest-scene) layer-json tileset tile-map-col tile-map-row tile-source-col tile-source-row)
   (labels ((prop-val (key object)

@@ -32,7 +32,7 @@ CLOSED: [2019-10-19 Sat 12:08]
 - player health
 - collected packages
 - collect package on collision
-*** implement castle and NPC
+*** DOING implement castle and NPC
 - to deliver package to
 *** tile-based collisions
 - Don't let player walk over certain tiles
@@ -57,3 +57,4 @@ CLOSED: [2019-10-19 Sat 12:08]
 - enemies block progress until sword is collected
 ** misc polish that I'll probably never do
 - touch up castle wall (see inconsistencies in corner area)
+- put stuff inside castle (where visible to player)
