@@ -36,6 +36,7 @@ CLOSED: [2019-10-19 Sat 12:08]
 - to deliver package to
 *** tile-based collisions
 - Don't let player walk over certain tiles
+*** win screen
 *** add sound effects
 - package collect
 ** instructions and dialogue

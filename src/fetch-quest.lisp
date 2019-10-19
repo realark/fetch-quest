@@ -146,7 +146,7 @@
 
 (defvar *player* nil)
 
-(defclass player (simple-motion animated-sprite direction-tracker agent input-handler)
+(defclass player (simple-motion faceable agent input-handler)
   ((recurse.vert:animations
     :initform (labels ((frame-at (row col)
                          (let ((frame-width 16)
@@ -192,8 +192,7 @@
    (collected-gifts :initform (list))
    (health :initarg :health :initform nil)
    (max-health :initform 3)
-   (hud :initform nil)
-   (previous-position :initform (vector2)))
+   (hud :initform nil))
   (:documentation "Player controlled game object"))
 
 (defmethod initialize-instance :after ((player player) &rest args)
@@ -206,30 +205,9 @@
                              :width (first (getconfig 'game-resolution *config*))
                              :height (second (getconfig 'game-resolution *config*))))))
 
-(defun %player-moving-p (player)
-  (with-slots (previous-position) player
-    (or (/= (x previous-position) (x player))
-         (/= (y previous-position) (y player)))))
-
 (defmethod get-new-animation ((player player))
-  (prog1
-      (ecase (first (facing player))
-        (:north (cond
-                  ((%player-moving-p player) :walking-north)
-                  (t :facing-north)))
-        (:south (cond
-                  ((%player-moving-p player) :walking-south)
-                  (t :facing-south)))
-        (:east (cond
-                  ((%player-moving-p player) :walking-east)
-                  (t :facing-east)))
-        (:west (cond
-                  ((%player-moving-p player) :walking-west)
-                  (t :facing-west))))
-    (with-slots (previous-position) player
-      (setf (x previous-position) (x player)
-            (y previous-position) (y player))
-      (values))))
+  ;; facing animations
+  (call-next-method player))
 
 (set-default-input-command-map
  player
