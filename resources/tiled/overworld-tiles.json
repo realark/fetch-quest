@@ -9,6 +9,10 @@
         {
          "name":"grass",
          "tile":0
+        }, 
+        {
+         "name":"castle-wall",
+         "tile":0
         }],
  "tilecount":1440,
  "tileheight":16,

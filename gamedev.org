@@ -27,12 +27,15 @@ goals:
 - can win game by delivering package
 *** DONE implement collisions
 *** DONE implement packages
-*** DOING implement HUD
+*** DONE implement HUD
+CLOSED: [2019-10-19 Sat 12:08]
 - player health
 - collected packages
 - collect package on collision
 *** implement castle and NPC
 - to deliver package to
+*** tile-based collisions
+- Don't let player walk over certain tiles
 *** add sound effects
 - package collect
 ** instructions and dialogue
@@ -52,3 +55,5 @@ goals:
 *** sword attack
 - collect sword to attack enemies
 - enemies block progress until sword is collected
+** misc polish that I'll probably never do
+- touch up castle wall (see inconsistencies in corner area)
