@@ -40,6 +40,36 @@
         },
      "404":
         {
+         "objectgroup":
+            {
+             "draworder":"index",
+             "name":"",
+             "objects":[
+                    {
+                     "height":16,
+                     "id":1,
+                     "name":"",
+                     "properties":
+                        {
+                         "z":"1"
+                        },
+                     "propertytypes":
+                        {
+                         "z":"string"
+                        },
+                     "rotation":0,
+                     "type":"static-obb",
+                     "visible":true,
+                     "width":4,
+                     "x":0,
+                     "y":0
+                    }],
+             "opacity":1,
+             "type":"objectgroup",
+             "visible":true,
+             "x":0,
+             "y":0
+            },
          "terrain":[-1, 0, -1, 0]
         },
      "405":

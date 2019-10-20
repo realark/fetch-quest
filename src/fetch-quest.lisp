@@ -52,6 +52,9 @@
   ((path-to-sprite :initform (resource-path "gift.png")
                    :reader path-to-sprite)))
 
+(defclass static-obb (obb static-object)
+  ())
+
 ;;;; faceable entity
 (defclass faceable (animated-sprite direction-tracker obb)
   ((recurse.vert::simultanious-directions-p :initform nil)
@@ -397,22 +400,30 @@
         (setf (recurse.vert::max-y (camera scene))
               (* (tile-height-px scene) (+ map-num-rows 0)))))
 
-(defmethod on-tile-read ((tiled-scene fetch-quest-scene) layer-json tileset tile-map-col tile-map-row tile-source-col tile-source-row)
+(defmethod on-tile-read ((tiled-scene fetch-quest-scene) layer-json tileset tile-number tile-map-col tile-map-row tile-source-col tile-source-row)
   (labels ((prop-val (key object)
              (cdr (assoc key (rest (assoc :properties object))))))
-    (add-to-scene
-     tiled-scene
-     (make-instance 'tile
-                    :width (tile-width-px tiled-scene) :height (tile-height-px tiled-scene)
-                    :x (* (tile-width-px tiled-scene) tile-map-col)
-                    :y (* (tile-height-px tiled-scene) tile-map-row)
-                    :z (read-from-string (null-fallback (prop-val :z layer-json) "0"))
-                    :animations (list :static (make-animation :spritesheet (tileset-image-source tileset)
-                                                              :frames (vector (make-sprite-source
-                                                                               (* (tileset-tile-width tileset) tile-source-col)
-                                                                               (* (tileset-tile-height tileset) tile-source-row)
-                                                                               (tileset-tile-width tileset)
-                                                                               (tileset-tile-height tileset)))))))))
+    (let ((tile (make-instance 'tile
+                               :width (tile-width-px tiled-scene) :height (tile-height-px tiled-scene)
+                               :x (* (tile-width-px tiled-scene) tile-map-col)
+                               :y (* (tile-height-px tiled-scene) tile-map-row)
+                               :z (read-from-string (null-fallback (prop-val :z layer-json) "0"))
+                               :animations (list :static (make-animation :spritesheet (tileset-image-source tileset)
+                                                                         :frames (vector (make-sprite-source
+                                                                                          (* (tileset-tile-width tileset) tile-source-col)
+                                                                                          (* (tileset-tile-height tileset) tile-source-row)
+                                                                                          (tileset-tile-width tileset)
+                                                                                          (tileset-tile-height tileset))))))))
+      (add-to-scene tiled-scene tile)
+
+      ;; add any objects attached to the tile to the scene and make these objects children of the tile
+      (let ((tile-objects-array (gethash tile-number (tileset-tile-objects tileset))))
+        (when tile-objects-array
+          (loop :for tile-object-json :across tile-objects-array :do
+               (let ((game-object (on-object-read
+                                   tiled-scene
+                                   (make-tiled-object :props tile-object-json))))
+                 (setf (parent game-object) tile))))))))
 
 (defmethod on-object-read ((tiled-scene fetch-quest-scene) (object tiled-object))
   (labels ((prop-val (key object)
@@ -421,20 +432,21 @@
              (alexandria:symbolicate (string-upcase (prop-val key object))))
            (custom-prop-val (key object)
              (cdr (assoc key (rest (assoc :properties (tiled-object-props object)))))))
-    (let ((*package* (find-package :fetch-quest)))
-      (add-to-scene tiled-scene
-                    (eval `(make-instance ',(prop-val-symbol :type object)
-                                          :object-id ,(prop-val :id object)
-                                          :x ,(prop-val :x object)
-                                          :y ,(prop-val :y object)
-                                          :z ,(read-from-string (null-fallback  (custom-prop-val :z object) "0"))
-                                          :width ,(prop-val :width object)
-                                          :height ,(prop-val :height object)
-                                          ,@(loop :with custom-props = (list)
-                                               :for custom-prop :in (prop-val :properties object) :do
-                                                 (push (read-from-string (cdr custom-prop)) custom-props)
-                                                 (push (car custom-prop) custom-props)
-                                               :finally (return custom-props))))))))
+    (let* ((*package* (find-package :fetch-quest))
+           (game-object (eval `(make-instance ',(prop-val-symbol :type object)
+                                              :object-id ,(prop-val :id object)
+                                              :x ,(prop-val :x object)
+                                              :y ,(prop-val :y object)
+                                              :z ,(read-from-string (null-fallback  (custom-prop-val :z object) "0"))
+                                              :width ,(prop-val :width object)
+                                              :height ,(prop-val :height object)
+                                              ,@(loop :with custom-props = (list)
+                                                   :for custom-prop :in (prop-val :properties object) :do
+                                                     (push (read-from-string (cdr custom-prop)) custom-props)
+                                                     (push (car custom-prop) custom-props)
+                                                   :finally (return custom-props))))))
+      (add-to-scene tiled-scene game-object)
+      game-object)))
 
 (defmethod update :before ((scene fetch-quest-scene) delta-t-ms world-context)
   (with-slots (update-area camera) scene
