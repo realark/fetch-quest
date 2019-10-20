@@ -144,10 +144,25 @@
                                                                     (apply #'make-sprite-source (frame-at 3 3)))
                                                     :time-between-frames-ms 250))))))
 
-(defclass gift-collector-npc (npc)
+(defclass doorman (npc)
   ((num-gifts-to-win-game :initform 3
                           :documentation "When player delivers this number of packages to the NPC the game is won.")
-   (num-gifts-received :initform 0)))
+   (num-gifts-received :initform 0)
+   (talked-to-player-p :initform nil)))
+
+(defun show-doorman-dialogue (doorman)
+  (with-slots (num-gifts-to-win-game num-gifts-received) doorman
+    (show-dialogue *scene*
+                   (make-instance 'dialogue-node
+                                  :speaker "Steve"
+                                  :text (format nil
+                                                "Hi Mark.
+Are you feeling okay? You look a little funny.
+Must be working when you're sick. What a trooper!
+There are ~A more packages left in the order.
+See you around."
+                                                (- num-gifts-to-win-game num-gifts-received) )
+                                  :next nil))))
 
 ;;;; player
 
@@ -266,14 +281,57 @@
                                  (:west :east))))))
     (face-towards npc player)))
 
-(defmethod collision :after ((player player) (npc gift-collector-npc))
+(defmethod collision :after ((player player) (npc doorman))
   (with-slots (collected-gifts) player
-    (with-slots (num-gifts-to-win-game num-gifts-received) npc
-      (loop :while (> (length collected-gifts) 0) :do
-           (pop collected-gifts)
-           (incf num-gifts-received))
-      (when (>= num-gifts-received num-gifts-to-win-game)
-        (change-scene *engine-manager* (won-game-menu) )))))
+    (with-slots (num-gifts-to-win-game num-gifts-received talked-to-player-p) npc
+      (when (> (length collected-gifts) 0) :do
+            (pop collected-gifts)
+            (play-sound-effect *audio* (resource-path "gift-collect.wav"))
+            (incf num-gifts-received))
+
+      (let* ((all-done (make-instance 'dialogue-node
+                                      :speaker "Steve"
+                                      :text "Well, that's everything in the order!
+Thanks for the rush job."
+                                      :next #'won-game))
+             (package-count (make-instance 'dialogue-node
+                                           :speaker "Steve"
+                                           :text (format nil
+                                                         "There are ~A more packages left in the order."
+                                                         (- num-gifts-to-win-game num-gifts-received) )
+                                           :next (lambda ()
+                                                   (when (>= num-gifts-received num-gifts-to-win-game)
+                                                     (show-dialogue *scene* all-done)))))
+             (initial-greeting (make-instance 'dialogue-node
+                                              :speaker "Steve"
+                                              :text "Hi Mark.
+Are you feeling okay? You look a little funny.
+Must be working when you're sick. What a trooper!"
+                                              :next package-count))
+             (current-dialogue nil))
+
+        (if talked-to-player-p
+            (setf current-dialogue package-count)
+            (setf current-dialogue initial-greeting
+                  talked-to-player-p t))
+        (show-dialogue *scene* current-dialogue)))))
+
+(defun won-game ()
+  (setf (music-state *audio*) :stopped)
+  (setf (a *tile-color*) 0.0)
+  (push-direction *player* :south)
+  ;; remove NPCs from scene so it's clear that they're not talking to the player.
+  (do-spatial-partition (obj (spatial-partition *scene*))
+    (when (typep obj 'npc)
+      (remove-from-scene *scene* obj)))
+  (show-dialogue
+   *scene*
+   (make-instance 'dialogue-node
+                  :speaker "The Universe"
+                  :text "Well done, Mark.
+Goodbye for now."
+                  :next (lambda ()
+                          (quit)))))
 
 ;;;; player HUD
 
@@ -427,44 +485,20 @@
  dialogue-hud
  (:next-node (on-activate
               (with-slots (active-node time-before-dismissable text-appear-timestamp) dialogue-hud
-                (with-slots (speaker (node-text text) next) active-node
-                  (when (>= (scene-ticks *scene*) (+ text-appear-timestamp time-before-dismissable))
-                    (setf active-node next)
-                    (setf text-appear-timestamp (scene-ticks *scene*))
-                    (unless next
-                      (setf (active-input-device *player*) (active-input-device dialogue-hud))
-                      (setf (active-input-device dialogue-hud) *no-input-id*))))))))
-
-;;;; dialogue content
+                (when active-node
+                  (with-slots (speaker (node-text text) next) active-node
+                    (when (>= (scene-ticks *scene*) (+ text-appear-timestamp time-before-dismissable))
+                      (cond ((typep next 'dialogue-node)
+                             (setf active-node next)
+                             (setf text-appear-timestamp (scene-ticks *scene*)))
+                            ((or (null next) (typep next 'function))
+                             (setf active-node nil)
+                             (setf (active-input-device *player*) (active-input-device dialogue-hud))
+                             (setf (active-input-device dialogue-hud) *no-input-id*)
+                             (when next
+                               (funcall next)))))))))))
 
 ;; TODO: dialogue DSL
-
-(defparameter *intro-dialogue*
-  (make-instance 'dialogue-node
-                 :speaker "The Universe"
-                 :text "Hello Mark. This is the Universe speaking.
-There's not much time to explain so I'm going to cut to the chase.
-Earlier tonight you took a \"heroic dose\" if you get my drift.
-Afterwards, Mr. Johnson, your boss, called you up.
-A rush order just came in and you're the only delivery-boy available.
-You must have felt courageous, because you agreed to work the overtime!
-That's where I come in.
-Would you believe me if I told you the fate of the universe depends on you making these deliveries?
-Well, you shouldn't because it doesn't.
-I'll be fine even if you screw your life up.
-But, I still want you to succeed.
-So here's what you have to do.
-Collect packages.
-Take those packages downtown.
-Drop the packages off with the doorman.
-The doorman will tell you how many packages he needs.
-Once you've delivered all the packages you're off work.
-That's basically it.
-Oh yeah, on more thing.
-In your current state, things might not look they way you expect.
-Just use your best judgment, and you should be able to figure it out.
-Good luck. If you do a good job I'll tell you the meaning of life. "
-                 :next nil))
 
 ;;;; game scene
 
@@ -653,21 +687,36 @@ Good luck. If you do a good job I'll tell you the meaning of life. "
      world
      0
      (lambda ()
-       (show-dialogue world *intro-dialogue*)
-       (show-tiles-after-initial-dialogue world)))
+       (show-dialogue
+        world
+        (make-instance 'dialogue-node
+                       :speaker "The Universe"
+                       :text "Hello Mark. This is the Universe speaking.
+There's not much time to explain so I'm going to cut to the chase.
+Earlier tonight you took a \"heroic dose\" if you get my drift.
+Afterwards, Mr. Johnson, your boss, called you up.
+A rush order just came in and you're the only delivery-boy available.
+You must have felt courageous, because you agreed to work the overtime!
+That's where I come in.
+Would you believe me if I told you the fate of the universe depends on you making these deliveries?
+Well, you shouldn't because it doesn't.
+I'll be fine even if you screw your life up.
+But, I still want you to succeed.
+So here's what you have to do.
+Collect packages.
+Take those packages downtown.
+Drop the packages off with the doorman.
+The doorman will tell you how many packages he needs.
+Once you've delivered all the packages you're off work.
+That's basically it.
+Oh yeah, on more thing.
+In your current state, things might not look they way you expect.
+Just use your best judgment, and you should be able to figure it out.
+Good luck. If you do a good job I'll tell you the meaning of life. "
+                       :next (lambda ()
+                               (play-music *audio* (resource-path "overworld-theme.wav") :num-plays -1)
+                               (setf (a *tile-color*) 1.0))))))
     world))
-
-(defun show-tiles-after-initial-dialogue (scene)
-  (if (slot-value (slot-value *scene* 'dialogue-hud) 'active-node)
-      ;; intro dialogue is still showing. Keep tiles hidden and try again later.
-      (schedule scene
-                (scene-ticks scene)
-                (lambda ()
-                  (show-tiles-after-initial-dialogue scene)))
-      ;; initial dialogue complete. Show tiles
-      (progn
-        (play-music *audio* (resource-path "overworld-theme.wav") :num-plays -1)
-        (setf (a *tile-color*) 1.0))))
 
 #+nil
 (recurse.vert:main #'fetch-quest::game-menu
