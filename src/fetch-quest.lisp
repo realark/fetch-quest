@@ -210,22 +210,30 @@ See you around."
                                                                     (apply #'make-sprite-source (frame-at 3 2))
                                                                     (apply #'make-sprite-source (frame-at 3 3)))
                                                     :time-between-frames-ms 250))))
-   (speed :initform 2)
+   (speed :initform 2.0)
    (collected-gifts :initform (list))
    (health :initarg :health :initform nil)
    (max-health :initform 3)
-   (hud :initform nil))
+   (hud :initform nil)
+   (feet-hit-box :initform nil))
   (:documentation "Player controlled game object"))
 
 (defmethod initialize-instance :after ((player player) &rest args)
   (declare (ignore args))
-  (with-slots (hud health max-health) player
+  (with-slots (hud health max-health feet-hit-box) player
     (unless health
       (setf health max-health))
     (setf hud (make-instance 'player-hud
                              :player player
                              :width (first (getconfig 'game-resolution *config*))
-                             :height (second (getconfig 'game-resolution *config*))))))
+                             :height (second (getconfig 'game-resolution *config*)))
+          feet-hit-box (make-instance 'obb
+                                      :parent player
+                                      :width (width player)
+                                      :height (* (height player) 1/4)
+                                      :z 1
+                                      :x 0
+                                      :y (* (height player) 9/16)))))
 
 (defmethod get-new-animation ((player player))
   ;; facing animations
@@ -315,6 +323,9 @@ Must be working when you're sick. What a trooper!"
             (setf current-dialogue initial-greeting
                   talked-to-player-p t))
         (show-dialogue *scene* current-dialogue)))))
+
+(defmethod hit-box ((player player) game-object)
+  (slot-value player 'feet-hit-box))
 
 (defun won-game ()
   (setf (music-state *audio*) :stopped)
