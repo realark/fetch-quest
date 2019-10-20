@@ -347,7 +347,128 @@
         (create-health hud (incf row))
         (create-gifts hud (incf row))))))
 
+;;;; dialogue code
+
+(defclass dialogue-node ()
+  ((speaker :initarg :speaker
+            :initform (error "Speaker Required")
+            :documentation "Who is speaking")
+   (text :initarg :text
+         :initform (error "Text Required")
+         :documentation "What is being said.")
+   (next :initarg :next
+         :initform nil)))
+
+(defmethod initialize-instance :after ((node dialogue-node) &rest args)
+  (declare (ignore args))
+  (with-slots (speaker text next) node
+    ;; make a separate child node for each newline
+    (loop :for i :from 0
+       :for char :across text :do
+         (when (equal #\newline char)
+           (let ((before (copy-seq (subseq text 0 i)))
+                 (after (copy-seq (subseq text (+ i 1)))))
+             (setf text before
+                   next (make-instance 'dialogue-node
+                                       :speaker speaker
+                                       :text after
+                                       :next next))
+             (return))))))
+
+(defclass dialogue-hud (overlay input-handler)
+  ((active-node :initarg :active-dialogue
+                :initform nil)
+   (screen-text :initform (make-instance 'font-drawable
+                                         :color *green*
+                                         :text ""))
+   (time-before-dismissable
+    :initform 100
+    :documentation "MS text will be on the screen before the player can close the dialogue")
+   (text-appear-timestamp :initform 0)))
+
+(defmethod initialize-instance :after ((hud dialogue-hud) &rest args)
+  (declare (ignore args))
+  (with-slots (screen-text) hud
+    (setf (parent screen-text) hud)))
+
+(defmethod load-resources ((hud dialogue-hud) gl-context)
+  (with-slots (screen-text) hud
+    (load-resources screen-text gl-context)))
+
+(defmethod release-resources ((hud dialogue-hud))
+  (with-slots (screen-text) hud
+    (release-resources screen-text)))
+
+(defmethod update ((hud dialogue-hud) timestep scene)
+  (call-next-method)
+  (with-slots (active-node screen-text) hud
+    (with-slots (speaker (node-text text) next) active-node
+      (when active-node
+        (setf (width screen-text) (* (width hud) 3/4)
+              (height screen-text) (* (height hud) 2/4)
+              (x screen-text) (* (width hud) 1/8)
+              (y screen-text) (* (height hud) 1/8)
+              (text screen-text) node-text)))))
+
+(defmethod render ((hud dialogue-hud) update-percent camera gl-context)
+  (with-slots (active-node screen-text) hud
+    (when active-node
+      (call-next-method hud update-percent camera gl-context))))
+
+(set-default-input-command-map
+ dialogue-hud
+ ("controller" (:1 :next-node)
+               (:0 :next-node))
+ ("sdl-keyboard" (:scancode-z :next-node)
+                 (:scancode-enter :next-node)
+                 (:scancode-space :next-node)))
+
+(set-default-command-action-map
+ dialogue-hud
+ (:next-node (on-activate
+              (with-slots (active-node time-before-dismissable text-appear-timestamp) dialogue-hud
+                (with-slots (speaker (node-text text) next) active-node
+                  (when (>= (scene-ticks *scene*) (+ text-appear-timestamp time-before-dismissable))
+                    (setf active-node next)
+                    (setf text-appear-timestamp (scene-ticks *scene*))
+                    (unless next
+                      (setf (active-input-device *player*) (active-input-device dialogue-hud))
+                      (setf (active-input-device dialogue-hud) *no-input-id*))))))))
+
+;;;; dialogue content
+
+;; TODO: dialogue DSL
+
+(defparameter *intro-dialogue*
+  (make-instance 'dialogue-node
+                 :speaker "The Universe"
+                 :text "Hello Mark. This is the Universe speaking.
+There's not much time to explain so I'm going to cut to the chase.
+Earlier tonight you took a \"heroic dose\" if you get my drift.
+Afterwards, Mr. Johnson, your boss, called you up.
+A rush order just came in and you're the only delivery-boy available.
+You must have felt courageous, because you agreed to work the overtime!
+That's where I come in.
+Would you believe me if I told you the fate of the universe depends on you making these deliveries?
+Well, you shouldn't because it doesn't.
+I'll be fine even if you screw your life up.
+But, I still want you to succeed.
+So here's what you have to do.
+Collect packages.
+Take those packages downtown.
+Drop the packages off with the doorman.
+The doorman will tell you how many packages he needs.
+Once you've delivered all the packages you're off work.
+That's basically it.
+Oh yeah, on more thing.
+In your current state, things might not look they way you expect.
+Just use your best judgment, and you should be able to figure it out.
+Good luck. If you do a good job I'll tell you the meaning of life. "
+                 :next nil))
+
 ;;;; game scene
+
+(defvar *tile-color* (make-color :r 1.0 :g 1.0 :b 1.0 :a 1.0))
 
 (defclass tile (animated-sprite static-object)
   ())
@@ -357,12 +478,16 @@
 
 (set-default-input-command-map
  my-scene-input-handler
+
  ("sdl-keyboard" (:scancode-q :quit)
+                 (:scancode-f11 :toggle-full-screen)
                  (:scancode-r :reload)))
 
 (set-default-command-action-map
  my-scene-input-handler
  (:quit              (on-deactivate (quit)))
+ (:toggle-full-screen (on-deactivate
+                       (toggle-fullscreen (application-window *engine-manager*))))
  (:reload            (on-deactivate (reload *scene*))))
 
 (defvar *world-layer-0* 0)
@@ -379,14 +504,19 @@
    (tile-width-px :initform nil
                   :accessor tile-width-px)
    (tile-height-px :initform nil
-                   :accessor tile-height-px))
+                   :accessor tile-height-px)
+   (dialogue-hud :initform nil))
   (:documentation "Default scene for my game"))
 
 (defmethod initialize-instance :after ((scene fetch-quest-scene) &rest args)
   (declare (ignore args))
-  (with-slots (update-area) scene
+  (with-slots (update-area dialogue-hud) scene
     (setf update-area
-          (make-active-area :min-x 0.0 :max-x 0.0 :min-y 0.0 :max-y 0.0))))
+          (make-active-area :min-x 0.0 :max-x 0.0 :min-y 0.0 :max-y 0.0)
+          dialogue-hud (make-instance 'dialogue-hud
+                                      :width (first (getconfig 'game-resolution *config*))
+                                      :height (second (getconfig 'game-resolution *config*))))
+    (add-to-scene scene dialogue-hud)))
 
 (defmethod on-map-read ((scene fetch-quest-scene) tiled-map-path map-num-cols map-num-rows map-tile-width map-tile-height)
   (setf (tile-width-px scene) map-tile-width
@@ -405,6 +535,7 @@
   (labels ((prop-val (key object)
              (cdr (assoc key (rest (assoc :properties object))))))
     (let ((tile (make-instance 'tile
+                               :color *tile-color*
                                :width (tile-width-px tiled-scene) :height (tile-height-px tiled-scene)
                                :x (* (tile-width-px tiled-scene) tile-map-col)
                                :y (* (tile-height-px tiled-scene) tile-map-row)
@@ -458,6 +589,14 @@
             (active-area-max-y update-area) (+ (y camera) (height camera) update-radius))))
   (update (slot-value scene 'scene-input-handler) delta-t-ms scene))
 
+(defun show-dialogue (scene dialogue-node)
+  (with-slots (dialogue-hud) scene
+    (with-slots (active-node text-appear-timestamp) dialogue-hud
+      (setf (active-input-device dialogue-hud) (active-input-device *player*))
+      (setf (active-input-device *player*) *no-input-id*)
+      (setf text-appear-timestamp (scene-ticks scene))
+      (setf active-node dialogue-node))))
+
 (defmethod reload ((scene fetch-quest-scene))
   (with-slots (reload-fn) scene
     (when (and *dev-mode* reload-fn)
@@ -491,7 +630,7 @@
          (world (make-instance 'fetch-quest-scene
                                :reload-fn #'launch-overworld
                                :tiled-map (resource-path "tiled/overworld.json")
-                               :music (resource-path "overworld-theme.wav")
+                               ;; :music (resource-path "overworld-theme.wav")
                                :camera (make-instance 'camera
                                                       :width (* demo-width 2)
                                                       :height (* demo-height 2)
@@ -507,8 +646,28 @@
       (error "No player in map"))
     (setf (clear-color *engine-manager*) *black*)
     (setf (target (camera world)) *player*)
-    (setf (active-input-device *player*) -1)
+    (setf (active-input-device *player*) *all-input-id*)
+
+    (setf (a *tile-color*) 0.0)
+    (schedule
+     world
+     0
+     (lambda ()
+       (show-dialogue world *intro-dialogue*)
+       (show-tiles-after-initial-dialogue world)))
     world))
+
+(defun show-tiles-after-initial-dialogue (scene)
+  (if (slot-value (slot-value *scene* 'dialogue-hud) 'active-node)
+      ;; intro dialogue is still showing. Keep tiles hidden and try again later.
+      (schedule scene
+                (scene-ticks scene)
+                (lambda ()
+                  (show-tiles-after-initial-dialogue scene)))
+      ;; initial dialogue complete. Show tiles
+      (progn
+        (play-music *audio* (resource-path "overworld-theme.wav") :num-plays -1)
+        (setf (a *tile-color*) 1.0))))
 
 #+nil
 (recurse.vert:main #'fetch-quest::game-menu

@@ -47,6 +47,7 @@ CLOSED: [2019-10-20 Sun 10:15]
 ** instructions and dialogue
 - intro to explain the game's objective
 - pause menu
+** hitbox for player feet
 ** coins
 - collectable coin
 - sfx on coin collect
