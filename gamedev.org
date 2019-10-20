@@ -20,7 +20,8 @@ Top-down 2d zelda-like adventure
 - heart
 - coins/tip
 * work plan
-** DOING bare-bones
+** DONE bare-bones
+CLOSED: [2019-10-20 Sun 10:15]
 goals:
 - game doesn't crash
 - can walk around map
@@ -37,9 +38,11 @@ CLOSED: [2019-10-19 Sat 16:12]
 - to deliver package to
 *** DONE win screen
 CLOSED: [2019-10-19 Sat 16:15]
-*** DOING tile-based collisions
+*** DONE tile-based collisions
+CLOSED: [2019-10-20 Sun 10:09]
 - Don't let player walk over certain tiles
-*** add sound effects
+*** DONE add sound effects
+CLOSED: [2019-10-20 Sun 10:15]
 - package collect
 ** instructions and dialogue
 - intro to explain the game's objective
@@ -54,6 +57,7 @@ CLOSED: [2019-10-19 Sat 16:15]
 - better font colors
 - opening menu theme song
 - winning menu theme song
+- menu sfx
 ** credits
 ** Sword and enemies
 *** implement log enemy

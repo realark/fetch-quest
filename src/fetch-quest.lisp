@@ -249,6 +249,7 @@
 (defmethod collision :after ((player player) (gift gift))
   (with-slots (collected-gifts) player
     (unless (find gift collected-gifts)
+      (play-sound-effect *audio* (resource-path "gift-collect.wav"))
       (push gift collected-gifts)))
   (remove-from-scene *scene* gift))
 
