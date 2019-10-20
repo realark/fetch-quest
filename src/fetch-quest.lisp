@@ -335,6 +335,7 @@ Must be working when you're sick. What a trooper!"
   (do-spatial-partition (obj (spatial-partition *scene*))
     (when (typep obj 'npc)
       (remove-from-scene *scene* obj)))
+  (play-music *audio* (resource-path "holy-noise.wav") :num-plays -1)
   (show-dialogue
    *scene*
    (make-instance 'dialogue-node
@@ -345,13 +346,18 @@ That was easy, wasn't it?
 In fact, you probably noticed that it was too easy...
 Okay, I'll fess up.
 I actually had a lot more challenges planned for you.
-The kind of challenges that would turn you from delivery boy into Delivery Man.
+The kind of challenges that would turn you from a delivery boy into a DELIVERY MAN.
 I got distracted and ran out of time to put those in your path.
 The lesson is, even an interdependent universal consciousness makes mistake.
 So the next time you're feeling bad about yourself, just think about that.
 Still, a promise is a promise, and I said I'd tell you the meaning of life.
 So here it goes. The meaning of life is..."
                   :next (lambda ()
+                          (setf (music-state *audio*) :stopped)
+                          (schedule *scene*
+                                    (+ (scene-ticks *scene*) 2000)
+                                    (lambda ()
+                                      (play-music *audio* (resource-path "holy-noise.wav") :num-plays -1)))
                           (play-sound-effect *audio* (resource-path "meaning-of-life.wav"))
                           (show-dialogue
                            *scene*
@@ -471,7 +477,7 @@ Goodbye for now."
   ((active-node :initarg :active-dialogue
                 :initform nil)
    (screen-text :initform (make-instance 'font-drawable
-                                         :color *green*
+                                         :color *blue*
                                          :text ""))
    (time-before-dismissable
     :initform 100
@@ -721,6 +727,7 @@ Goodbye for now."
      world
      0
      (lambda ()
+       (play-music *audio* (resource-path "holy-noise.wav") :num-plays -1)
        (show-dialogue
         world
         (make-instance 'dialogue-node
@@ -728,8 +735,9 @@ Goodbye for now."
                        :text "Hello Mark. This is the Universe speaking.
 There's not much time to explain so I'm going to cut to the chase.
 Earlier tonight you took a \"heroic dose\" if you get my drift.
-Afterwards, Mr. Johnson, your boss, called you up.
+Afterwards Mr. Johnson, your boss, called you up.
 A rush order just came in and you're the only delivery-boy available.
+Oh yeah, did I mention you're a delivery boy?
 You must have felt courageous, because you agreed to work the overtime!
 That's where I come in.
 Would you believe me if I told you the fate of the universe depends on you making these deliveries?
