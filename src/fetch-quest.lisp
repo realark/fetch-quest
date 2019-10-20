@@ -250,16 +250,16 @@ See you around."
  player
  (:move-right (while-active
                (push-direction player :east)
-               (setf (x (slot-value player 'velocity)) 2.0)))
+               (setf (x (slot-value player 'velocity)) (slot-value *player* 'speed))))
  (:move-left (while-active
               (push-direction player :west)
-              (setf (x (slot-value player 'velocity)) -2.0)))
+              (setf (x (slot-value player 'velocity)) (- (slot-value *player* 'speed)))))
  (:move-up (while-active
             (push-direction player :north)
-            (setf (y (slot-value player 'velocity)) -2.0)))
+            (setf (y (slot-value player 'velocity)) (- (slot-value *player* 'speed)))))
  (:move-down (while-active
               (push-direction player :south)
-              (setf (y (slot-value player 'velocity)) 2.0))))
+              (setf (y (slot-value player 'velocity)) (slot-value *player* 'speed)))))
 
 (defmethod collision :after ((player player) (gift gift))
   (with-slots (collected-gifts) player
@@ -328,10 +328,33 @@ Must be working when you're sick. What a trooper!"
    *scene*
    (make-instance 'dialogue-node
                   :speaker "The Universe"
-                  :text "Well done, Mark.
-Goodbye for now."
+                  :text "Hey Mark, it's me. The Universe.
+Great job out there.
+That was easy, wasn't it?
+In fact, you probably noticed that it was too easy...
+Okay, I'll fess up.
+I actually had a lot more challenges planned for you.
+The kind of challenges that would turn you from delivery boy into Delivery Man.
+I got distracted and ran out of time to put those in your path.
+The lesson is, even an interdependent universal consciousness makes mistake.
+So the next time you're feeling bad about yourself, just think about that.
+Still, a promise is a promise, and I said I'd tell you the meaning of life.
+So here it goes. The meaning of life is..."
                   :next (lambda ()
-                          (quit)))))
+                          (play-sound-effect *audio* (resource-path "meaning-of-life.wav"))
+                          (show-dialogue
+                           *scene*
+                           (make-instance 'dialogue-node
+                                          :speaker "The Universe"
+                                          :text "\~\~\~\~\~\~
+\~ \~ \~ \~ \~ \~
+\~  \~  \~  \~  \~  \~
+\~   \~   \~   \~   \~   \~
+Hmmm...
+I guess that doesn't translate very well into english.
+I'll have to get back to you on that.
+Goodbye for now."
+                                          :next (lambda () (quit))))))))
 
 ;;;; player HUD
 
