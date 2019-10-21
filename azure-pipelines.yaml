@@ -14,9 +14,9 @@ jobs:
   - job: 'CrossCompile'
     strategy:
       matrix:
-        mac:
-          target: 'x86_64-apple-darwin'
-          imageName: 'macos-10.13'
+        # mac:
+        #   target: 'x86_64-apple-darwin'
+        #   imageName: 'macos-10.13'
         win:
           target: 'x86_64-windows-10'
           imageName: 'vs2017-win2016'
