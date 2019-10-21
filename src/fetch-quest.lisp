@@ -247,12 +247,16 @@ See you around."
                (:11 :move-up))
  ("sdl-keyboard" (:scancode-right :move-right)
                  (:scancode-l :move-right)
+                 (:scancode-d :move-right)
                  (:scancode-left :move-left)
                  (:scancode-h :move-left)
+                 (:scancode-a :move-left)
                  (:scancode-up :move-up)
                  (:scancode-k :move-up)
+                 (:scancode-w :move-up)
                  (:scancode-down :move-down)
-                 (:scancode-j :move-down)))
+                 (:scancode-j :move-down)
+                 (:scancode-s :move-down)))
 
 (set-default-command-action-map
  player
