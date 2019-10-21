@@ -65,6 +65,7 @@ jobs:
       - bash: |
             mkdir -p $HOME/quicklisp/local-projects/
             git clone https://github.com/realark/vert.git vert
+            git clone https://github.com/realark/cl-freetype2.git
             ln -s '$(Build.SourcesDirectory)' $HOME/quicklisp/local-projects/fetch-quest
         displayName: Non-Windows Link Local Project
         condition: ne( variables['Agent.OS'], 'Windows_NT' )
@@ -72,6 +73,7 @@ jobs:
             echo "make folder"
             mkdir -p "$HOME/quicklisp/local-projects/"
             git clone https://github.com/realark/vert.git vert
+            git clone https://github.com/realark/cl-freetype2.git
             echo "do linking"
             export WIN_HOME=`echo $HOME | sed -r 's#^/c#C:#g'`
             cmd <<< "mklink /D \"${WIN_HOME//\//\\}\\quicklisp\\local-projects\fetch-quest\" \"$(Build.SourcesDirectory)\""
@@ -136,6 +138,7 @@ jobs:
       - script: |
             mkdir -p $HOME/quicklisp/local-projects/
             git clone https://github.com/realark/vert.git vert
+            git clone https://github.com/realark/cl-freetype2.git
             ln -s '$(Build.SourcesDirectory)' $HOME/quicklisp/local-projects/fetch-quest
             echo "-- sdl ld path --"
             ldd libSDL2-2.0.so.0

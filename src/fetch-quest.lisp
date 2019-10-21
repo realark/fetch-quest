@@ -327,52 +327,6 @@ Must be working when you're sick. What a trooper!"
 (defmethod hit-box ((player player) game-object)
   (slot-value player 'feet-hit-box))
 
-(defun won-game ()
-  (setf (music-state *audio*) :stopped)
-  (setf (a *tile-color*) 0.0)
-  (push-direction *player* :south)
-  ;; remove NPCs from scene so it's clear that they're not talking to the player.
-  (do-spatial-partition (obj (spatial-partition *scene*))
-    (when (typep obj 'npc)
-      (remove-from-scene *scene* obj)))
-  (play-music *audio* (resource-path "holy-noise.wav") :num-plays -1)
-  (show-dialogue
-   *scene*
-   (make-instance 'dialogue-node
-                  :speaker "The Universe"
-                  :text "Hey Mark, it's me. The Universe.
-Great job out there.
-That was easy, wasn't it?
-In fact, you probably noticed that it was too easy...
-Okay, I'll fess up.
-I actually had a lot more challenges planned for you.
-The kind of challenges that would turn you from a delivery boy into a DELIVERY MAN.
-I got distracted and ran out of time to put those in your path.
-The lesson is, even an interdependent universal consciousness makes mistakes.
-So the next time you're feeling bad about yourself, just think about that.
-Still, a promise is a promise, and I said I'd tell you the meaning of life.
-So here it goes. The meaning of life is..."
-                  :next (lambda ()
-                          (setf (music-state *audio*) :stopped)
-                          (schedule *scene*
-                                    (+ (scene-ticks *scene*) 2000)
-                                    (lambda ()
-                                      (play-music *audio* (resource-path "holy-noise.wav") :num-plays -1)))
-                          (play-sound-effect *audio* (resource-path "meaning-of-life.wav"))
-                          (show-dialogue
-                           *scene*
-                           (make-instance 'dialogue-node
-                                          :speaker "The Universe"
-                                          :text "\~\~\~\~\~\~
-\~ \~ \~ \~ \~ \~
-\~  \~  \~  \~  \~  \~
-\~   \~   \~   \~   \~   \~
-Hmmm...
-I guess that doesn't translate very well into English.
-I'll have to get back to you on that.
-Goodbye for now."
-                                          :next (lambda () (quit))))))))
-
 ;;;; player HUD
 
 (defmethod add-to-scene :after (scene (player player))
@@ -759,7 +713,78 @@ Good luck. If you do a good job I'll tell you the meaning of life. "
                                (play-music *audio* (resource-path "overworld-theme.wav") :num-plays -1)
                                (setf (a *tile-color*) 1.0))))))
     world))
+(defun won-game ()
+  (setf (music-state *audio*) :stopped)
+  (setf (a *tile-color*) 0.0)
+  (push-direction *player* :south)
+  ;; remove NPCs from scene so it's clear that they're not talking to the player.
+  (do-spatial-partition (obj (spatial-partition *scene*))
+    (when (typep obj 'npc)
+      (remove-from-scene *scene* obj)))
+  (play-music *audio* (resource-path "holy-noise.wav") :num-plays -1)
+  (show-dialogue
+   *scene*
+   (make-instance 'dialogue-node
+                  :speaker "The Universe"
+                  :text "Hey Mark, it's me. The Universe.
+Great job out there.
+That was easy, wasn't it?
+In fact, you probably noticed that it was too easy...
+Okay, I'll fess up.
+I actually had a lot more challenges planned for you.
+The kind of challenges that would turn you from a delivery boy into a DELIVERY MAN.
+I got distracted and ran out of time to put those in your path.
+The lesson is, even an interdependent universal consciousness makes mistakes.
+So the next time you're feeling bad about yourself, just think about that.
+Still, a promise is a promise, and I said I'd tell you the meaning of life.
+So here it goes. The meaning of life is..."
+                  :next (lambda ()
+                          (setf (music-state *audio*) :stopped)
+                          (schedule *scene*
+                                    (+ (scene-ticks *scene*) 2000)
+                                    (lambda ()
+                                      (play-music *audio* (resource-path "holy-noise.wav") :num-plays -1)))
+                          (play-sound-effect *audio* (resource-path "meaning-of-life.wav"))
+                          (show-dialogue
+                           *scene*
+                           (make-instance 'dialogue-node
+                                          :speaker "The Universe"
+                                          :text "\~\~\~\~\~\~
+\~ \~ \~ \~ \~ \~
+\~  \~  \~  \~  \~  \~
+\~   \~   \~   \~   \~   \~
+Hmmm...
+I guess that doesn't translate very well into English.
+I'll have to get back to you on that.
+Goodbye for now."
+                                          :next (lambda () (quit))))))))
 
+;;;; launcher
+
+(let ((%loaded-libraries% (list)))
+  (defun %pre-image-save ()
+    (setf freetype2:*library* nil)
+    (sb-ext:gc :full T) ; run freetype finalizer
+    (loop :for library :in (cffi:list-foreign-libraries :loaded-only t) :do
+         (format T "close foreign lib: ~A~%" library)
+         (push (cffi:foreign-library-name library) %loaded-libraries%)
+         (cffi:close-foreign-library library))
+    (sb-ext:gc :full T))
+
+  (defun %post-image-load ()
+    (loop :while %loaded-libraries% :do
+         (let ((library-name (pop %loaded-libraries%)))
+           (format T "load foreign lib: ~A~%" library-name)
+           (cffi:load-foreign-library library-name)))
+    (setf freetype2:*library* (freetype2:make-freetype))))
+
+
+(defun run-fetch-quest ()
+  (%post-image-load)
+  (recurse.vert:main #'fetch-quest::launch-overworld
+                     :config *fetch-quest-config*
+                     :block t
+                     :dev-mode nil))
 #+nil
 (recurse.vert:main #'fetch-quest::game-menu
                    :config *fetch-quest-config*
