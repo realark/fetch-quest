@@ -88,10 +88,8 @@ jobs:
         inputs:
           sourceFolder: '$(Build.SourcesDirectory)'
           contents: |
-            sample-game-osx
-            libSDL2.dylib
-            sample-game-windows.exe
-            SDL2.dll
+            fetch-quest-osx
+            fetch-quest-windows.exe
           targetFolder: '$(Build.ArtifactStagingDirectory)'
       - task: PublishBuildArtifacts@1
         displayName: 'Publish Game Artifact'
@@ -149,8 +147,7 @@ jobs:
         inputs:
           sourceFolder: '$(Build.SourcesDirectory)'
           contents: |
-            sample-game-linux
-            libSDL2-2.0.so.0
+            fetch-quest-linux
           targetFolder: '$(Build.ArtifactStagingDirectory)'
       - task: PublishBuildArtifacts@1
         displayName: 'Publish Game Artifact'
