@@ -348,7 +348,7 @@ Okay, I'll fess up.
 I actually had a lot more challenges planned for you.
 The kind of challenges that would turn you from a delivery boy into a DELIVERY MAN.
 I got distracted and ran out of time to put those in your path.
-The lesson is, even an interdependent universal consciousness makes mistake.
+The lesson is, even an interdependent universal consciousness makes mistakes.
 So the next time you're feeling bad about yourself, just think about that.
 Still, a promise is a promise, and I said I'd tell you the meaning of life.
 So here it goes. The meaning of life is..."
@@ -368,7 +368,7 @@ So here it goes. The meaning of life is..."
 \~  \~  \~  \~  \~  \~
 \~   \~   \~   \~   \~   \~
 Hmmm...
-I guess that doesn't translate very well into english.
+I guess that doesn't translate very well into English.
 I'll have to get back to you on that.
 Goodbye for now."
                                           :next (lambda () (quit))))))))
