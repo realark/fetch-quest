@@ -60,7 +60,7 @@ jobs:
       - bash: |
             cd $HOME
             curl -O http://beta.quicklisp.org/quicklisp.lisp
-            sbcl --load quicklisp.lisp --eval '(quicklisp-quickstart:install)' --eval '(ql-util:without-prompting (quicklisp:add-to-init-file))' --eval '(quit)'
+            sbcl --load quicklisp.lisp --eval '(quicklisp-quickstart:install :client-version "2019-02-16" :dist-version "quicklisp/2019-08-13")' --eval '(ql-util:without-prompting (quicklisp:add-to-init-file))' --eval '(quit)'
         displayName: Install Quicklisp
       - bash: |
             mkdir -p $HOME/quicklisp/local-projects/
@@ -131,13 +131,15 @@ jobs:
       - bash: |
             cd $HOME
             curl -O http://beta.quicklisp.org/quicklisp.lisp
-            sbcl --load quicklisp.lisp --eval '(quicklisp-quickstart:install)' --eval '(ql-util:without-prompting (quicklisp:add-to-init-file))' --eval '(quit)'
+            sbcl --load quicklisp.lisp --eval '(quicklisp-quickstart:install :client-version "2019-02-16" :dist-version "quicklisp/2019-08-13")' --eval '(ql-util:without-prompting (quicklisp:add-to-init-file))' --eval '(quit)'
         displayName: Install Quicklisp
       - script: |
             mkdir -p $HOME/quicklisp/local-projects/
+            cd $HOME/quicklisp/local-projects/
             git clone https://github.com/realark/vert.git vert
             git clone https://github.com/realark/cl-freetype2.git
             ln -s '$(Build.SourcesDirectory)' $HOME/quicklisp/local-projects/fetch-quest
+            cd '$(Build.SourcesDirectory)'
             echo "-- sdl ld path --"
             ldd libSDL2-2.0.so.0
             LD_LIBRARY_PATH="./" sbcl --load build-game.lisp
